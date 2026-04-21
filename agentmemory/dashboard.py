@@ -230,6 +230,38 @@ def api_projects() -> dict[str, Any]:
         engine._close(conn)
 
 
+@app.get("/api/graph")
+def api_graph(
+    project: str = "",
+    backend: str = "tfidf",
+) -> dict[str, Any]:
+    from .graph import build_memory_graph
+
+    engine = MemoryEngine()
+    return build_memory_graph(engine, project or "default", backend=backend)
+
+
+@app.get("/api/timeline")
+def api_timeline(
+    project: str = "",
+    limit: int = 30,
+) -> dict[str, Any]:
+    from .graph import get_timeline
+
+    engine = MemoryEngine()
+    return {"timeline": get_timeline(engine, project or "default", limit=limit)}
+
+
+@app.get("/api/clusters")
+def api_clusters(
+    project: str = "",
+) -> dict[str, Any]:
+    from .graph import get_category_clusters
+
+    engine = MemoryEngine()
+    return get_category_clusters(engine, project or "default")
+
+
 def run_dashboard(host: str = "127.0.0.1", port: int = 8745) -> None:
     """Run the dashboard server."""
     try:

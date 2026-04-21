@@ -36,6 +36,12 @@ Every time you start a new session with Claude Code, Codex, or Cursor, your agen
 | **Team sync** | ✅ | Share memories via `.agent-memory/` folder in your repo. |
 | **MCP server** | ✅ | Expose AgentMemory as an MCP server for Cursor/Copilot/Claude. |
 | **Web dashboard** | ✅ | Browse, search, and manage memories in a local web UI. |
+| **Shell integration** | ✅ | Auto-inject context into Claude Code via shell aliases. |
+| **Background daemon** | ✅ | Silent auto-capture while you work. |
+| **Memory graph** | ✅ | Visualize relationships between memories. |
+| **Mem0 importer** | ✅ | Migrate from Mem0 to AgentMemory. |
+| **Social sharing** | ✅ | Auto-post milestones to Twitter/LinkedIn. |
+| **VS Code extension** | ✅ | Capture memories directly from your editor. |
 
 ---
 
@@ -139,6 +145,24 @@ agentmemory team export                   # Export memories to .agent-memory/
 agentmemory team import                   # Import team-shared memories
 agentmemory team status                   # Show team sync status
 
+# Shell integration
+agentmemory shell show                    # Show shell integration script
+
+# Background daemon
+agentmemory daemon start                  # Start silent auto-capture
+agentmemory daemon status                 # Check daemon status
+
+# Import & migration
+agentmemory import <path> --format mem0   # Import from Mem0
+agentmemory import <path> --format markdown
+agentmemory import <path> --format json
+
+# Social sharing
+agentmemory post "Milestone!"             # Post to Twitter/LinkedIn
+
+# Memory graph
+agentmemory graph                         # Build relationship graph
+
 # MCP server & dashboard
 agentmemory mcp                           # Start MCP server (stdio)
 agentmemory dashboard                     # Start web dashboard on :8745
@@ -224,6 +248,12 @@ Your Terminal Agent
 - [x] Team sync (shared memory via git)
 - [x] MCP server integration
 - [x] Web dashboard
+- [x] Shell integration
+- [x] Background daemon
+- [x] Memory graph visualization
+- [x] Mem0 importer
+- [x] Social sharing
+- [x] VS Code extension
 
 ---
 

@@ -1,0 +1,97 @@
+{
+  "name": "agentmemory",
+  "displayName": "AgentMemory",
+  "description": "Capture and recall AI agent memories directly from VS Code",
+  "version": "0.2.0",
+  "publisher": "agentmemory",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Snippets",
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "agent",
+    "memory",
+    "claude",
+    "cursor",
+    "copilot"
+  ],
+  "activationEvents": [
+    "onCommand:agentmemory.capture",
+    "onCommand:agentmemory.recall",
+    "onCommand:agentmemory.search",
+    "onCommand:agentmemory.load"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "agentmemory.capture",
+        "title": "Capture Memory",
+        "category": "AgentMemory",
+        "icon": "$(add)"
+      },
+      {
+        "command": "agentmemory.recall",
+        "title": "Recall Memories",
+        "category": "AgentMemory",
+        "icon": "$(history)"
+      },
+      {
+        "command": "agentmemory.search",
+        "title": "Search Memories",
+        "category": "AgentMemory",
+        "icon": "$(search)"
+      },
+      {
+        "command": "agentmemory.load",
+        "title": "Load Context Brief",
+        "category": "AgentMemory",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "agentmemory.sync",
+        "title": "Sync CLAUDE.md",
+        "category": "AgentMemory",
+        "icon": "$(sync)"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "agentmemory.capture",
+          "group": "agentmemory@1",
+          "when": "editorHasSelection"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "AgentMemory",
+      "properties": {
+        "agentmemory.project": {
+          "type": "string",
+          "default": "",
+          "description": "Project name (auto-detected if empty)"
+        },
+        "agentmemory.autoCapture": {
+          "type": "boolean",
+          "default": false,
+          "description": "Auto-capture on file save"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.0.0"
+  }
+}

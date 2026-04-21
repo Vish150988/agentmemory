@@ -13,9 +13,11 @@ from rich.table import Table
 from .core import DEFAULT_MEMORY_DIR, MemoryEngine, MemoryEntry
 from .decay import decay_confidence, reinforce_memory
 from .export import export_markdown
+from .graph import build_memory_graph
 from .hooks import install_hooks, uninstall_hooks
 from .recall import build_context_brief
 from .semantic import SemanticIndex
+from .shell import _get_shell_config_path, generate_shell_integration
 from .summarize import summarize_project, summarize_session
 from .team_sync import team_export, team_import, team_status
 
@@ -49,7 +51,7 @@ def _get_project() -> str:
 
 
 @click.group()
-@click.version_option(version="0.2.0")
+@click.version_option(version="0.3.0")
 def main() -> None:
     """AgentMemory — Cross-agent memory layer for AI coding agents."""
     pass
@@ -476,6 +478,172 @@ def decay(project: str | None, half_life: float, dry_run: bool) -> None:
     console.print(f"  Updated: {stats['updated']}")
     console.print(f"  Unchanged: {stats['unchanged']}")
     console.print(f"  Archived (confidence < 0.1): {stats['archived']}")
+
+
+@main.group()
+def shell() -> None:
+    """Shell integration — auto-inject context into agents."""
+    pass
+
+
+@shell.command("show")
+@click.option("--shell", "-s", default="auto", help="Shell type (bash, zsh, fish, powershell)")
+def shell_show(shell: str) -> None:
+    """Show shell integration script."""
+    from .shell import detect_shell
+
+    detected = detect_shell() if shell == "auto" else shell
+    script = generate_shell_integration(detected)
+    config_path = _get_shell_config_path(detected)
+    console.print(f"[bold]Shell integration for {detected}[/bold]")
+    console.print(f"[dim]Add to: {config_path}[/dim]\n")
+    console.print(script)
+
+
+@main.group()
+def daemon() -> None:
+    """Background daemon for silent auto-capture."""
+    pass
+
+
+@daemon.command("start")
+@click.option("--project", "-p", help="Project name")
+@click.option("--interval", default=60.0, help="Polling interval in seconds")
+def daemon_start(project: str | None, interval: float) -> None:
+    """Start the background daemon."""
+    from .daemon import daemon_status, start_daemon
+
+    project = project or _get_project()
+    start_daemon(project, interval=interval)
+    status = daemon_status()
+    console.print(f"[green][OK][/green] Daemon started for [bold]{status['project']}[/bold]")
+    console.print(f"  Watch dir: {status['watch_dir']}")
+    console.print(f"  Interval: {status['interval']}s")
+    console.print("[dim]Press Ctrl+C to stop[/dim]")
+    try:
+        import time
+
+        while status["running"]:
+            time.sleep(1)
+            status = daemon_status()
+    except KeyboardInterrupt:
+        from .daemon import stop_daemon
+
+        stop_daemon()
+        console.print("[green][OK][/green] Daemon stopped.")
+
+
+@daemon.command("status")
+def daemon_status_cmd() -> None:
+    """Show daemon status."""
+    from .daemon import daemon_status
+
+    status = daemon_status()
+    if status["running"]:
+        console.print("[green]Daemon is running[/green]")
+        console.print(f"  Project: {status['project']}")
+        console.print(f"  Watch dir: {status['watch_dir']}")
+        console.print(f"  Interval: {status['interval']}s")
+    else:
+        console.print("[yellow]Daemon is not running[/yellow]")
+
+
+@main.command()
+@click.argument("source_path", type=click.Path(exists=True))
+@click.option(
+    "--format",
+    "-f",
+    "fmt",
+    default="auto",
+    type=click.Choice(["auto", "mem0", "markdown", "json"]),
+)
+@click.option("--project", "-p", help="Target project name")
+def import_(source_path: str, fmt: str, project: str | None) -> None:
+    """Import memories from external sources (Mem0, markdown, JSON)."""
+    from .importers import import_from_json, import_from_markdown, import_from_mem0
+
+    path = Path(source_path)
+    project = project or _get_project()
+    engine = MemoryEngine()
+
+    if fmt == "auto":
+        if path.is_dir():
+            fmt = "mem0"
+        elif path.suffix == ".md":
+            fmt = "markdown"
+        elif path.suffix == ".json":
+            fmt = "json"
+        else:
+            console.print("[red][ERROR][/red] Could not detect format. Use --format.")
+            raise click.Exit(1)
+
+    if fmt == "mem0":
+        stats = import_from_mem0(path, engine=engine)
+        console.print("[green][OK][/green] Mem0 import complete:")
+        console.print(f"  Imported: {stats['imported']}")
+        console.print(f"  Skipped: {stats['skipped']}")
+    elif fmt == "markdown":
+        count = import_from_markdown(path, project, engine=engine)
+        console.print(f"[green][OK][/green] Imported {count} memories from markdown")
+    elif fmt == "json":
+        count = import_from_json(path, project, engine=engine)
+        console.print(f"[green][OK][/green] Imported {count} memories from JSON")
+
+
+@main.command()
+@click.argument("milestone")
+@click.option("--project", "-p", help="Project name")
+@click.option(
+    "--platform",
+    "-pl",
+    multiple=True,
+    default=["twitter", "linkedin"],
+    help="Platforms to post to",
+)
+@click.option("--dry-run", is_flag=True, help="Preview without posting")
+def post(milestone: str, project: str | None, platform: tuple[str, ...], dry_run: bool) -> None:
+    """Post a milestone to social media (requires agent-reach)."""
+    from .social import post_milestone
+
+    project = project or _get_project()
+    results = post_milestone(project, milestone, list(platform), dry_run=dry_run)
+
+    if dry_run:
+        return
+
+    for pl, success in results.items():
+        icon = "[green][OK][/green]" if success else "[red][FAIL][/red]"
+        console.print(f"{icon} {pl}")
+
+
+@main.command()
+@click.option("--project", "-p", help="Project name")
+@click.option(
+    "--backend",
+    "-b",
+    default="tfidf",
+    type=click.Choice(["auto", "tfidf", "sentence-transformers"]),
+)
+@click.option("--output", "-o", type=click.Path(), help="Output JSON file")
+def graph(project: str | None, backend: str, output: str | None) -> None:
+    """Build and display memory relationship graph."""
+    import json
+
+    project = project or _get_project()
+    engine = MemoryEngine()
+    data = build_memory_graph(engine, project, backend=backend)
+
+    if output:
+        Path(output).write_text(json.dumps(data, indent=2), encoding="utf-8")
+        console.print(f"[green][OK][/green] Graph written to {output}")
+    else:
+        console.print(f"[bold]Memory Graph — {project}[/bold]\n")
+        console.print(f"Nodes: {len(data['nodes'])}")
+        console.print(f"Edges: {len(data['edges'])}")
+        if data["edges"]:
+            console.print("\nTop connections:")
+            for edge in sorted(data["edges"], key=lambda e: e["weight"], reverse=True)[:10]:
+                console.print(f"  #{edge['source']} ↔ #{edge['target']} (weight: {edge['weight']})")
 
 
 if __name__ == "__main__":
