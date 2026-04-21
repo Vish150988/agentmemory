@@ -9,7 +9,7 @@ from agentmemory.core import MemoryEngine, MemoryEntry
 def test_init_creates_db():
     with tempfile.TemporaryDirectory() as tmp:
         db_path = Path(tmp) / "test.db"
-        engine = MemoryEngine(db_path=db_path)
+        MemoryEngine(db_path=db_path)
         assert db_path.exists()
 
 
@@ -40,7 +40,13 @@ def test_search():
         engine = MemoryEngine(db_path=db_path)
 
         engine.store(MemoryEntry(project="p", session_id="s", content="auth module with JWT"))
-        engine.store(MemoryEntry(project="p", session_id="s", content="payment gateway integration"))
+        engine.store(
+            MemoryEntry(
+                project="p",
+                session_id="s",
+                content="payment gateway integration",
+            )
+        )
 
         results = engine.search("auth")
         assert len(results) == 1

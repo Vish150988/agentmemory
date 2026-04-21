@@ -32,7 +32,14 @@ def test_decay_dry_run():
         db_path = Path(tmp) / "test.db"
         engine = MemoryEngine(db_path=db_path)
 
-        engine.store(MemoryEntry(project="p", session_id="s", content="recent memory", confidence=1.0))
+        engine.store(
+            MemoryEntry(
+                project="p",
+                session_id="s",
+                content="recent memory",
+                confidence=1.0,
+            )
+        )
 
         stats = decay_confidence(engine, project="p", half_life_days=30.0, dry_run=True)
         assert stats["total_processed"] == 1

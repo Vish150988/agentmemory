@@ -5,8 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from .core import MemoryEngine
-from .recall import build_context_brief
-
 
 CLAUDE_MD_TEMPLATE = """# CLAUDE.md
 

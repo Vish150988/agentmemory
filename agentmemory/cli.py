@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import json
 import os
-import sys
 import uuid
 from pathlib import Path
 
@@ -19,7 +17,6 @@ from .hooks import install_hooks, uninstall_hooks
 from .recall import build_context_brief
 from .semantic import SemanticIndex
 from .summarize import summarize_project, summarize_session
-from .sync import sync_project
 
 console = Console()
 
@@ -74,14 +71,21 @@ def init(project: str | None) -> None:
         description=f"Project initialized at {Path.cwd()}",
     )
 
-    console.print(f"[green][OK][/green] Initialized agent memory for project: [bold]{project}[/bold]")
+    console.print(
+        f"[green][OK][/green] Initialized agent memory for project: [bold]{project}[/bold]"
+    )
     console.print(f"  Database: {DEFAULT_MEMORY_DIR / 'memory.db'}")
 
 
 @main.command()
 @click.argument("content")
 @click.option("--project", "-p", help="Project name")
-@click.option("--category", "-c", default="fact", type=click.Choice(["fact", "decision", "action", "preference", "error"]))
+@click.option(
+    "--category",
+    "-c",
+    default="fact",
+    type=click.Choice(["fact", "decision", "action", "preference", "error"]),
+)
 @click.option("--confidence", default=1.0, type=float)
 @click.option("--tags", "-t", default="", help="Comma-separated tags")
 @click.option("--source", "-s", default="user", help="Source of the memory")
@@ -109,7 +113,9 @@ def capture(
         tags=tags,
     )
     memory_id = engine.store(entry)
-    console.print(f"[green][OK][/green] Captured memory [bold]#{memory_id}[/bold] in [bold]{project}[/bold]")
+    console.print(
+        f"[green][OK][/green] Captured memory [bold]#{memory_id}[/bold] in [bold]{project}[/bold]"
+    )
 
 
 @main.command()
@@ -202,7 +208,7 @@ def hook_install() -> None:
     """Install git hooks to auto-sync CLAUDE.md on commits."""
     try:
         pre, post = install_hooks()
-        console.print(f"[green][OK][/green] Installed git hooks:")
+        console.print("[green][OK][/green] Installed git hooks:")
         console.print(f"  - {pre.name}")
         console.print(f"  - {post.name}")
         console.print("\n[dim]CLAUDE.md will auto-sync before and after each commit.[/dim]")

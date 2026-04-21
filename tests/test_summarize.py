@@ -12,9 +12,30 @@ def test_summarize_project():
         db_path = Path(tmp) / "test.db"
         engine = MemoryEngine(db_path=db_path)
 
-        engine.store(MemoryEntry(project="p", session_id="s1", category="decision", content="Chose FastAPI"))
-        engine.store(MemoryEntry(project="p", session_id="s1", category="error", content="Redis bug"))
-        engine.store(MemoryEntry(project="p", session_id="s1", category="preference", content="Use Pydantic"))
+        engine.store(
+            MemoryEntry(
+                project="p",
+                session_id="s1",
+                category="decision",
+                content="Chose FastAPI",
+            )
+        )
+        engine.store(
+            MemoryEntry(
+                project="p",
+                session_id="s1",
+                category="error",
+                content="Redis bug",
+            )
+        )
+        engine.store(
+            MemoryEntry(
+                project="p",
+                session_id="s1",
+                category="preference",
+                content="Use Pydantic",
+            )
+        )
 
         summary = summarize_project(engine, "p")
         assert "Chose FastAPI" in summary
@@ -35,8 +56,22 @@ def test_summarize_session():
         db_path = Path(tmp) / "test.db"
         engine = MemoryEngine(db_path=db_path)
 
-        engine.store(MemoryEntry(project="p", session_id="sess-abc", category="decision", content="Chose Postgres"))
-        engine.store(MemoryEntry(project="p", session_id="sess-abc", category="fact", content="Postgres supports JSONB"))
+        engine.store(
+            MemoryEntry(
+                project="p",
+                session_id="sess-abc",
+                category="decision",
+                content="Chose Postgres",
+            )
+        )
+        engine.store(
+            MemoryEntry(
+                project="p",
+                session_id="sess-abc",
+                category="fact",
+                content="Postgres supports JSONB",
+            )
+        )
 
         summary = summarize_session(engine, "sess-abc", project="p")
         assert "Chose Postgres" in summary

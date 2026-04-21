@@ -13,9 +13,27 @@ def test_semantic_search_finds_related():
         engine = MemoryEngine(db_path=db_path)
 
         # Store related memories
-        engine.store(MemoryEntry(project="p", session_id="s", content="authentication system with JWT tokens"))
-        engine.store(MemoryEntry(project="p", session_id="s", content="login page redesign with OAuth"))
-        engine.store(MemoryEntry(project="p", session_id="s", content="database schema for users table"))
+        engine.store(
+            MemoryEntry(
+                project="p",
+                session_id="s",
+                content="authentication system with JWT tokens",
+            )
+        )
+        engine.store(
+            MemoryEntry(
+                project="p",
+                session_id="s",
+                content="login page redesign with OAuth",
+            )
+        )
+        engine.store(
+            MemoryEntry(
+                project="p",
+                session_id="s",
+                content="database schema for users table",
+            )
+        )
 
         index = SemanticIndex(engine, "p")
         results = index.search("auth login", top_k=2)

@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 import json
-import os
 import sqlite3
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
-
 
 DEFAULT_MEMORY_DIR = Path.home() / ".agent-memory"
 DEFAULT_DB_PATH = DEFAULT_MEMORY_DIR / "memory.db"
@@ -106,8 +104,10 @@ class MemoryEngine:
         try:
             cursor = conn.execute(
                 """
-                INSERT INTO memories
-                (project, session_id, timestamp, category, content, confidence, source, tags, metadata)
+                INSERT INTO memories (
+                    project, session_id, timestamp, category,
+                    content, confidence, source, tags, metadata
+                )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
@@ -158,7 +158,12 @@ class MemoryEngine:
         finally:
             self._close(conn)
 
-    def search(self, keyword: str, project: Optional[str] = None, limit: int = 20) -> list[MemoryEntry]:
+    def search(
+        self,
+        keyword: str,
+        project: Optional[str] = None,
+        limit: int = 20,
+    ) -> list[MemoryEntry]:
         """Simple keyword search over memory content."""
         query = "SELECT * FROM memories WHERE content LIKE ?"
         params: list[Any] = [f"%{keyword}%"]
@@ -190,7 +195,12 @@ class MemoryEngine:
         finally:
             self._close(conn)
 
-    def set_project_context(self, project: str, context: dict[str, Any], description: str = "") -> None:
+    def set_project_context(
+        self,
+        project: str,
+        context: dict[str, Any],
+        description: str = "",
+    ) -> None:
         """Set or update project context."""
         now = datetime.now(timezone.utc).isoformat()
         conn = self._connection()

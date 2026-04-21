@@ -6,9 +6,7 @@ Just numpy for vector math.
 
 from __future__ import annotations
 
-import math
 import re
-from typing import Optional
 
 import numpy as np
 
