@@ -71,6 +71,7 @@ def test_postgres_backend_not_available_without_psycopg() -> None:
 def test_postgres_backend_crud() -> None:
     """Test Postgres backend CRUD when DATABASE_URL is available."""
     import os
+    import uuid
 
     if not os.environ.get("DATABASE_URL"):
         pytest.skip("DATABASE_URL not set")
@@ -83,29 +84,32 @@ def test_postgres_backend_crud() -> None:
     backend = PostgresBackend()
     backend.init()
 
-    entry = MemoryEntry(
-        project="pgtest",
-        session_id="s1",
-        content="postgres hello",
-        category="fact",
-    )
-    memory_id = backend.store(entry)
-    assert memory_id > 0
+    project = f"pgtest_{uuid.uuid4().hex[:8]}"
+    try:
+        entry = MemoryEntry(
+            project=project,
+            session_id="s1",
+            content="postgres hello",
+            category="fact",
+        )
+        memory_id = backend.store(entry)
+        assert memory_id > 0
 
-    memories = backend.recall(project="pgtest")
-    assert len(memories) == 1
-    assert memories[0].content == "postgres hello"
+        memories = backend.recall(project=project)
+        assert len(memories) == 1
+        assert memories[0].content == "postgres hello"
 
-    retrieved = backend.get_memory_by_id(memory_id)
-    assert retrieved is not None
-    assert retrieved.content == "postgres hello"
+        retrieved = backend.get_memory_by_id(memory_id)
+        assert retrieved is not None
+        assert retrieved.content == "postgres hello"
 
-    backend.update_memory(memory_id, {"confidence": 0.5})
-    updated = backend.get_memory_by_id(memory_id)
-    assert updated.confidence == 0.5
+        backend.update_memory(memory_id, {"confidence": 0.5})
+        updated = backend.get_memory_by_id(memory_id)
+        assert updated.confidence == 0.5
 
-    backend.delete_memory(memory_id)
-    assert backend.get_memory_by_id(memory_id) is None
-
-    # Clean up project context if any
-    backend.delete_project("pgtest")
+        backend.delete_memory(memory_id)
+        assert backend.get_memory_by_id(memory_id) is None
+    finally:
+        # Clean up project context if any
+        backend.delete_project(project)
+        backend.close()
