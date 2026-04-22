@@ -51,6 +51,14 @@ def _resolve_backend(backend: str, db_path: Path | None = None):
         from .backends import PostgresBackend
 
         return PostgresBackend()
+    if backend == "chroma":
+        from .backends import ChromaBackend
+
+        return ChromaBackend()
+    if backend == "redis":
+        from .backends import RedisBackend
+
+        return RedisBackend()
     raise ValueError(f"Unknown backend: {backend}")
 
 

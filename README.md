@@ -40,6 +40,10 @@ Every time you start a new session with Claude Code, Codex, or Cursor, your agen
 | **Background daemon** | ✅ | Silent auto-capture while you work. |
 | **Memory graph** | ✅ | Visualize relationships between memories. |
 | **Mem0 importer** | ✅ | Migrate from Mem0 to CrossAgentMemory. |
+| **Obsidian/Notion importer** | ✅ | Import from Obsidian vaults and Notion exports. |
+| **Chroma backend** | ✅ | Native vector DB backend with semantic search. |
+| **Redis backend** | ✅ | Fast in-memory backend for high-throughput use. |
+| **Cloud sync** | ✅ | Encrypted S3/R2 backup and restore. |
 | **Social sharing** | ✅ | Auto-post milestones to Twitter/LinkedIn. |
 | **VS Code extension** | ✅ | Capture memories directly from your editor. |
 | **LLM summarization** | ✅ | GPT/Claude-powered project & session summaries. |
@@ -165,9 +169,11 @@ crossagentmemory daemon start                  # Start silent auto-capture
 crossagentmemory daemon status                 # Check daemon status
 
 # Import & migration
-crossagentmemory import <path> --format mem0   # Import from Mem0
+crossagentmemory import <path> --format mem0       # Import from Mem0
 crossagentmemory import <path> --format markdown
 crossagentmemory import <path> --format json
+crossagentmemory import <vault> --format obsidian  # Import Obsidian vault
+crossagentmemory import <export.zip> --format notion # Import Notion export
 
 # Social sharing
 crossagentmemory post "Milestone!"             # Post to Twitter/LinkedIn
@@ -181,10 +187,12 @@ crossagentmemory dashboard                     # Start web dashboard on :8745
 crossagentmemory server                        # Start REST API on :8746
 
 # Backup & restore
-crossagentmemory backup                        # Create dated .zip backup
-crossagentmemory backup -p my-project          # Backup single project
-crossagentmemory restore backup.zip            # Restore from backup
-crossagentmemory restore backup.zip --dry-run  # Preview restore
+crossagentmemory backup                            # Create dated .zip backup
+crossagentmemory backup -p my-project              # Backup single project
+crossagentmemory restore backup.zip                # Restore from backup
+crossagentmemory restore backup.zip --dry-run      # Preview restore
+crossagentmemory cloud-export --bucket my-bucket   # Upload encrypted backup to S3
+crossagentmemory cloud-import --bucket my-bucket   # Restore from encrypted S3 backup
 
 # Management
 crossagentmemory stats                         # Show statistics
@@ -284,6 +292,26 @@ export DATABASE_URL=postgresql://crossagentmemory:crossagentmemory@localhost:543
 crossagentmemory init
 ```
 
+### Chroma (vector DB)
+
+```bash
+# 1. Install with Chroma support
+pip install crossagentmemory[chroma]
+
+# 2. Use Chroma backend
+engine = MemoryEngine(backend="chroma")
+```
+
+### Redis
+
+```bash
+# 1. Install with Redis support
+pip install crossagentmemory[redis]
+
+# 2. Use Redis backend (expects Redis on localhost:6379)
+engine = MemoryEngine(backend="redis")
+```
+
 ### Switching Backends
 
 ```python
@@ -297,6 +325,12 @@ engine = MemoryEngine(backend="sqlite")
 
 # Explicit PostgreSQL
 engine = MemoryEngine(backend="postgres")
+
+# Chroma vector DB
+engine = MemoryEngine(backend="chroma")
+
+# Redis
+engine = MemoryEngine(backend="redis")
 ```
 
 ### Migrating Data

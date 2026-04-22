@@ -590,12 +590,18 @@ def daemon_status_cmd() -> None:
     "-f",
     "fmt",
     default="auto",
-    type=click.Choice(["auto", "mem0", "markdown", "json"]),
+    type=click.Choice(["auto", "mem0", "markdown", "json", "obsidian", "notion"]),
 )
 @click.option("--project", "-p", help="Target project name")
 def import_(source_path: str, fmt: str, project: str | None) -> None:
-    """Import memories from external sources (Mem0, markdown, JSON)."""
-    from .importers import import_from_json, import_from_markdown, import_from_mem0
+    """Import memories from external sources (Mem0, markdown, JSON, Obsidian, Notion)."""
+    from .importers import (
+        import_from_json,
+        import_from_markdown,
+        import_from_mem0,
+        import_from_notion,
+        import_from_obsidian,
+    )
 
     path = Path(source_path)
     project = project or _get_project()
@@ -603,11 +609,17 @@ def import_(source_path: str, fmt: str, project: str | None) -> None:
 
     if fmt == "auto":
         if path.is_dir():
-            fmt = "mem0"
+            # Check for Obsidian vault markers (.obsidian folder)
+            if (path / ".obsidian").exists():
+                fmt = "obsidian"
+            else:
+                fmt = "mem0"
         elif path.suffix == ".md":
             fmt = "markdown"
         elif path.suffix == ".json":
             fmt = "json"
+        elif path.suffix == ".zip":
+            fmt = "notion"
         else:
             console.print("[red][ERROR][/red] Could not detect format. Use --format.")
             raise click.Exit(1)
@@ -623,6 +635,12 @@ def import_(source_path: str, fmt: str, project: str | None) -> None:
     elif fmt == "json":
         count = import_from_json(path, project, engine=engine)
         console.print(f"[green][OK][/green] Imported {count} memories from JSON")
+    elif fmt == "obsidian":
+        count = import_from_obsidian(path, project=project, engine=engine)
+        console.print(f"[green][OK][/green] Imported {count} memories from Obsidian vault")
+    elif fmt == "notion":
+        count = import_from_notion(path, project=project, engine=engine)
+        console.print(f"[green][OK][/green] Imported {count} memories from Notion export")
 
 
 @main.command()
@@ -748,6 +766,52 @@ def restore(input_path: str, dry_run: bool) -> None:
     console.print(f"  Memories: {stats['memories']}")
     console.print(f"  Projects: {stats['projects']}")
     console.print(f"  Embeddings: {stats['embeddings']}")
+
+
+@main.command("cloud-export")
+@click.option("--bucket", required=True, help="S3 bucket name")
+@click.option("--endpoint", help="S3-compatible endpoint URL (e.g. https://...)")
+@click.option("--key", default="crossagentmemory-backup.enc", help="Object key in bucket")
+@click.option(
+    "--password-env",
+    default="CROSSAGENTMEMORY_SYNC_PASSWORD",
+    help="Env var containing encryption password",
+)
+def cloud_export(bucket: str, endpoint: str | None, key: str, password_env: str) -> None:
+    """Export encrypted memories to S3-compatible cloud storage."""
+    from .cloud_sync import sync_export
+
+    password = os.environ.get(password_env)
+    if not password:
+        console.print(f"[red][ERROR][/red] Set {password_env} environment variable")
+        raise click.Exit(1)
+
+    engine = MemoryEngine()
+    sync_export(engine, password, bucket, endpoint=endpoint, key=key)
+    console.print(f"[green][OK][/green] Uploaded encrypted backup to s3://{bucket}/{key}")
+
+
+@main.command("cloud-import")
+@click.option("--bucket", required=True, help="S3 bucket name")
+@click.option("--endpoint", help="S3-compatible endpoint URL")
+@click.option("--key", default="crossagentmemory-backup.enc", help="Object key in bucket")
+@click.option(
+    "--password-env",
+    default="CROSSAGENTMEMORY_SYNC_PASSWORD",
+    help="Env var containing encryption password",
+)
+def cloud_import(bucket: str, endpoint: str | None, key: str, password_env: str) -> None:
+    """Import encrypted memories from S3-compatible cloud storage."""
+    from .cloud_sync import sync_import
+
+    password = os.environ.get(password_env)
+    if not password:
+        console.print(f"[red][ERROR][/red] Set {password_env} environment variable")
+        raise click.Exit(1)
+
+    engine = MemoryEngine()
+    count = sync_import(engine, password, bucket, endpoint=endpoint, key=key)
+    console.print(f"[green][OK][/green] Restored {count} memories from s3://{bucket}/{key}")
 
 
 @main.command()

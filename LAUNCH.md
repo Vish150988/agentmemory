@@ -12,6 +12,9 @@ CrossAgentMemory fixes that:
 • Semantic search (no heavy deps, pure numpy)
 • Auto-generates CLAUDE.md
 • Confidence decay — old memories fade, important ones stick
+• Chroma + Redis + PostgreSQL + SQLite backends
+• Encrypted cloud sync to S3/R2
+• Import from Obsidian, Notion, Mem0
 
 pip install crossagentmemory
 

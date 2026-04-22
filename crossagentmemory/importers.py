@@ -172,3 +172,146 @@ def import_from_json(json_path: Path, project: str, engine: MemoryEngine | None 
         count += 1
 
     return count
+
+
+def import_from_obsidian(
+    vault_dir: Path,
+    project: str | None = None,
+    engine: MemoryEngine | None = None,
+) -> int:
+    """Import memories from an Obsidian vault directory.
+
+    Parses Markdown files with YAML frontmatter. Each file becomes one memory entry.
+    """
+    engine = engine or MemoryEngine()
+    count = 0
+    for md_file in vault_dir.rglob("*.md"):
+        text = md_file.read_text(encoding="utf-8")
+        frontmatter: dict[str, Any] = {}
+        body = text
+
+        # Parse YAML frontmatter
+        if text.startswith("---"):
+            parts = text.split("---", 2)
+            if len(parts) >= 3:
+                try:
+                    import yaml
+
+                    frontmatter = yaml.safe_load(parts[1]) or {}
+                    body = parts[2].strip()
+                except Exception:
+                    pass
+
+        if not body.strip():
+            continue
+
+        proj = project or frontmatter.get("project") or md_file.parent.name or "obsidian"
+        tags = frontmatter.get("tags", [])
+        if isinstance(tags, list):
+            tags = ",".join(str(t) for t in tags)
+        else:
+            tags = str(tags)
+
+        # Extract #hashtags from body as additional tags, and strip them from content
+        hashtags = set(re.findall(r"#(\w+)", body))
+        if hashtags:
+            tags = ",".join(filter(None, [tags, ",".join(sorted(hashtags))]))
+            body = re.sub(r"#\w+", "", body).strip()
+
+        ts = frontmatter.get("date") or frontmatter.get("created")
+        if not ts:
+            ts = datetime.fromtimestamp(md_file.stat().st_mtime, tz=timezone.utc).isoformat()
+
+        entry = MemoryEntry(
+            project=proj,
+            session_id="obsidian-import",
+            category=frontmatter.get("category", "fact"),
+            content=body[:2000],  # Truncate very long notes
+            confidence=0.8,
+            source="obsidian-import",
+            tags=tags or "import,obsidian",
+            timestamp=ts if isinstance(ts, str) else str(ts),
+        )
+        engine.store(entry)
+        count += 1
+
+    return count
+
+
+def import_from_notion(
+    notion_path: Path,
+    project: str | None = None,
+    engine: MemoryEngine | None = None,
+) -> int:
+    """Import memories from a Notion export (ZIP or folder).
+
+    Parses Markdown files and CSV databases from the export.
+    """
+    engine = engine or MemoryEngine()
+    import tempfile
+    import zipfile
+
+    extract_dir = notion_path
+    cleanup_dir: Path | None = None
+
+    if notion_path.suffix.lower() == ".zip":
+        cleanup_dir = Path(tempfile.mkdtemp())
+        with zipfile.ZipFile(notion_path, "r") as zf:
+            zf.extractall(cleanup_dir)
+        extract_dir = cleanup_dir
+
+    count = 0
+
+    # Import Markdown files
+    for md_file in extract_dir.rglob("*.md"):
+        text = md_file.read_text(encoding="utf-8")
+        if not text.strip():
+            continue
+        proj = project or md_file.parent.name or "notion"
+        entry = MemoryEntry(
+            project=proj,
+            session_id="notion-import",
+            category="fact",
+            content=text[:2000],
+            confidence=0.8,
+            source="notion-import",
+            tags="import,notion",
+        )
+        engine.store(entry)
+        count += 1
+
+    # Import CSV databases
+    for csv_file in extract_dir.rglob("*.csv"):
+        try:
+            import csv
+
+            with csv_file.open("r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    content = row.get("Name") or row.get("Title") or row.get("Content")
+                    if not content:
+                        continue
+                    proj = project or csv_file.parent.name or "notion"
+                    tags = [
+                        k for k, v in row.items() if v and k not in ("Name", "Title", "Content")
+                    ]
+                    entry = MemoryEntry(
+                        project=proj,
+                        session_id="notion-import",
+                        category="fact",
+                        content=str(content)[:2000],
+                        confidence=0.8,
+                        source="notion-import",
+                        tags=",".join(tags) if tags else "import,notion",
+                    )
+                    engine.store(entry)
+                    count += 1
+        except Exception:
+            continue
+
+    if cleanup_dir:
+        import shutil
+
+        shutil.rmtree(cleanup_dir, ignore_errors=True)
+
+    return count
