@@ -6,29 +6,22 @@
 
 Project: memagent
 
-Working directory: C:\Users\vishn\projects\agentmemory
-
 ## Conventions & Preferences
 
-- Preference: Use pytest.importorskip for optional dependencies so tests gracefully skip when fastmcp/fastapi not installed
-- Preference: Ruff for linting with 100 char line length, import sorting (I001), and per-file-ignores for embedded templates
+_None recorded yet._
 
 ## Recent Decisions
 
-- CI was failing because test_postgres_backend_crud called fetchall() on CREATE TABLE with psycopg v3. Fixed in migrations.py by checking cur.description before fetchall.
-- Architecture decision: Modular file-per-feature design so each feature can be added without breaking existing code
-- Architecture decision: SQLite single-file storage over client-server database for portability and zero-config deployment
+_None recorded yet._
 
 ## Known Issues
 
-- Error: Windows Unicode issues with Rich console — fixed by using [OK] instead of checkmark emoji
+_None recorded yet._
 
 ## Architecture
 
-- PostgresBackend now caches connections instead of open/close per query. Auto-reconnects on stale connections. Close method available for explicit cleanup.
-- Working on Memagent v0.3.4 — pluggable SQLite/PostgreSQL backends, schema versioning, connection pooling. CI green on GitHub Actions. Next: backup/restore CLI or config file.
-- User is Vish150988 on GitHub, @Vicky_1388 on Twitter, building open-source AI tools
+_None recorded yet._
 
 ---
 
-*Last updated: 2026-04-22T03:17:04.873117+00:00*
+*Last updated: 2026-04-22T03:38:12.703200+00:00*

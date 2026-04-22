@@ -15,7 +15,7 @@ Memagent fixes that:
 
 pip install memagent
 
-https://github.com/Vish150988/agentmemory
+https://github.com/Vish150988/memagent
 
 #AI #OpenSource #ClaudeCode #Codex #Cursor
 ```
@@ -36,7 +36,7 @@ What it does:
 
 Tech stack: Python, Click, Rich, numpy (no OpenAI API, no cloud, no vector DB required)
 
-GitHub: https://github.com/Vish150988/agentmemory
+GitHub: https://github.com/Vish150988/memagent
 
 Would love feedback from anyone using AI agents for coding!
 ```
@@ -57,7 +57,7 @@ It's a local-first, cross-agent memory system:
 
 No cloud. No API keys. No heavy ML dependencies.
 
-Code: https://github.com/Vish150988/agentmemory
+Code: https://github.com/Vish150988/memagent
 ```
 
 ## LinkedIn Post
@@ -75,7 +75,7 @@ Memagent solves this with:
 
 Built with Python, Click, Rich, and numpy. No cloud dependencies. No API costs.
 
-Check it out: https://github.com/Vish150988/agentmemory
+Check it out: https://github.com/Vish150988/memagent
 
 Would love your feedback and contributions!
 

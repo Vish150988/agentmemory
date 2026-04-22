@@ -63,9 +63,9 @@ memagent = "memagent.cli:main"
 mg = "memagent.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/Vish150988/agentmemory"
-Repository = "https://github.com/Vish150988/agentmemory"
-Issues = "https://github.com/Vish150988/agentmemory/issues"
+Homepage = "https://github.com/Vish150988/memagent"
+Repository = "https://github.com/Vish150988/memagent"
+Issues = "https://github.com/Vish150988/memagent/issues"
 
 [tool.ruff]
 line-length = 100

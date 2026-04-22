@@ -1,7 +1,7 @@
 # Memagent Complete User Guide
 
 > **Version:** 0.2.0  
-> **GitHub:** https://github.com/Vish150988/agentmemory
+> **GitHub:** https://github.com/Vish150988/memagent
 
 ---
 
@@ -554,4 +554,4 @@ git add .memagent/ CLAUDE.md && git commit
 ---
 
 *Last updated: 2026-04-21*  
-*For issues: https://github.com/Vish150988/agentmemory/issues*
+*For issues: https://github.com/Vish150988/memagent/issues*

@@ -6,7 +6,7 @@ Your AI agent should remember what you built yesterday, why you rejected that ap
 
 **Memagent makes that happen.**
 
-[![CI](https://github.com/Vish150988/agentmemory/actions/workflows/ci.yml/badge.svg)](https://github.com/Vish150988/agentmemory/actions)
+[![CI](https://github.com/Vish150988/memagent/actions/workflows/ci.yml/badge.svg)](https://github.com/Vish150988/memagent/actions)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -347,7 +347,7 @@ memagent migrate --from-db-path ./old.db --to-dsn postgresql://user:pass@host/db
 PRs welcome! This is a community project.
 
 ```bash
-git clone https://github.com/Vish150988/agentmemory.git
+git clone https://github.com/Vish150988/memagent.git
 cd memagent
 pip install -e ".[dev]"
 pytest tests/ -v

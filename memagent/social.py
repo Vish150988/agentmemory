@@ -80,7 +80,7 @@ def post_milestone(
         f"Memagent now holds {stats['total_memories']} memories "
         f"across {stats['projects']} projects. "
         f"Cross-agent memory layer for AI coding agents.\n\n"
-        f"github.com/Vish150988/agentmemory"
+        f"github.com/Vish150988/memagent"
     )
 
     if dry_run:
