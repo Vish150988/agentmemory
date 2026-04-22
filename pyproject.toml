@@ -63,9 +63,9 @@ agentmemory = "agentmemory.cli:main"
 am = "agentmemory.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/agentmemory"
-Repository = "https://github.com/yourusername/agentmemory"
-Issues = "https://github.com/yourusername/agentmemory/issues"
+Homepage = "https://github.com/Vish150988/agentmemory"
+Repository = "https://github.com/Vish150988/agentmemory"
+Issues = "https://github.com/Vish150988/agentmemory/issues"
 
 [tool.ruff]
 line-length = 100

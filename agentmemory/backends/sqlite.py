@@ -85,6 +85,7 @@ class SQLiteBackend(MemoryBackend):
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_embeddings_model ON embeddings(model_name)"
             )
+            self._init_fts5(conn)
             conn.commit()
         finally:
             conn.close()
@@ -92,6 +93,52 @@ class SQLiteBackend(MemoryBackend):
         from .migrations import run_migrations
 
         run_migrations(self)
+
+    def _init_fts5(self, conn: sqlite3.Connection) -> None:
+        """Initialize FTS5 virtual table for full-text search."""
+        try:
+            # Clean up any legacy triggers from older versions
+            for trigger in ("memories_fts_insert", "memories_fts_delete", "memories_fts_update"):
+                conn.execute(f"DROP TRIGGER IF EXISTS {trigger}")
+            conn.execute(
+                """
+                CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(
+                    content, content_rowid=rowid
+                )
+                """
+            )
+            # Backfill existing data if table is empty
+            count = conn.execute(
+                "SELECT COUNT(*) FROM memories_fts"
+            ).fetchone()[0]
+            if count == 0:
+                conn.execute(
+                    """
+                    INSERT INTO memories_fts(rowid, content)
+                    SELECT rowid, content FROM memories
+                    """
+                )
+        except Exception:
+            # FTS5 may not be available in all builds
+            pass
+
+    def _fts5_insert(self, conn: sqlite3.Connection, rowid: int, content: str) -> None:
+        try:
+            conn.execute(
+                "INSERT INTO memories_fts(rowid, content) VALUES (?, ?)",
+                (rowid, content),
+            )
+        except Exception:
+            pass
+
+    def _fts5_delete(self, conn: sqlite3.Connection, rowid: int) -> None:
+        try:
+            conn.execute(
+                "INSERT INTO memories_fts(memories_fts, rowid, content) VALUES ('delete', ?, '')",
+                (rowid,),
+            )
+        except Exception:
+            pass
 
     def store(self, entry: MemoryEntry) -> int:
         conn = self._connection()
@@ -116,8 +163,11 @@ class SQLiteBackend(MemoryBackend):
                     entry.metadata,
                 ),
             )
+            rowid = cursor.lastrowid
+            if rowid:
+                self._fts5_insert(conn, rowid, entry.content)
             conn.commit()
-            return cursor.lastrowid  # type: ignore[return-value]
+            return rowid  # type: ignore[return-value]
         finally:
             self._close(conn)
 
@@ -157,18 +207,44 @@ class SQLiteBackend(MemoryBackend):
         project: str | None = None,
         limit: int = 20,
     ) -> list[MemoryEntry]:
-        query = "SELECT * FROM memories WHERE content LIKE ?"
-        params: list[Any] = [f"%{keyword}%"]
-
-        if project:
-            query += " AND project = ?"
-            params.append(project)
-
-        query += " ORDER BY timestamp DESC LIMIT ?"
-        params.append(limit)
-
         conn = self._connection()
         try:
+            # Try FTS5 first for ranked full-text search
+            try:
+                if project:
+                    rows = conn.execute(
+                        """
+                        SELECT m.* FROM memories m
+                        JOIN memories_fts f ON m.rowid = f.rowid
+                        WHERE memories_fts MATCH ? AND m.project = ?
+                        ORDER BY rank
+                        LIMIT ?
+                        """,
+                        (keyword, project, limit),
+                    ).fetchall()
+                else:
+                    rows = conn.execute(
+                        """
+                        SELECT m.* FROM memories m
+                        JOIN memories_fts f ON m.rowid = f.rowid
+                        WHERE memories_fts MATCH ?
+                        ORDER BY rank
+                        LIMIT ?
+                        """,
+                        (keyword, limit),
+                    ).fetchall()
+                return [MemoryEntry(**dict(row)) for row in rows]
+            except Exception:
+                pass
+
+            # Fallback to LIKE search
+            query = "SELECT * FROM memories WHERE content LIKE ?"
+            params: list[Any] = [f"%{keyword}%"]
+            if project:
+                query += " AND project = ?"
+                params.append(project)
+            query += " ORDER BY timestamp DESC LIMIT ?"
+            params.append(limit)
             rows = conn.execute(query, params).fetchall()
             return [MemoryEntry(**dict(row)) for row in rows]
         finally:
@@ -342,6 +418,9 @@ class SQLiteBackend(MemoryBackend):
                 f"UPDATE memories SET {set_clause} WHERE id = ?",
                 (*filtered.values(), memory_id),
             )
+            if cursor.rowcount > 0 and "content" in filtered:
+                self._fts5_delete(conn, memory_id)
+                self._fts5_insert(conn, memory_id, filtered["content"])
             conn.commit()
             return cursor.rowcount > 0
         finally:
@@ -350,6 +429,7 @@ class SQLiteBackend(MemoryBackend):
     def delete_memory(self, memory_id: int) -> bool:
         conn = self._connection()
         try:
+            self._fts5_delete(conn, memory_id)
             cursor = conn.execute("DELETE FROM memories WHERE id = ?", (memory_id,))
             conn.commit()
             return cursor.rowcount > 0
