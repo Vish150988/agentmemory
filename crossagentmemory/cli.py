@@ -1185,6 +1185,45 @@ def check_conflicts(project: str | None) -> None:
     console.print(table)
 
 
+@main.command("resolve-conflicts")
+@click.option("--project", "-p", help="Project name")
+@click.option(
+    "--strategy",
+    default="decay",
+    type=click.Choice(["decay", "expire", "both"]),
+    help="Resolution strategy",
+)
+@click.option("--decay", default=0.3, type=float, help="Confidence decay amount")
+@click.option("--dry-run", is_flag=True, help="Preview without applying")
+def resolve_conflicts(project: str | None, strategy: str, decay: float, dry_run: bool) -> None:
+    """Auto-resolve contradictory memories."""
+    from .conflict_resolution import scan_and_resolve_project
+
+    project = project or _get_project()
+    engine = MemoryEngine()
+
+    if dry_run:
+        console.print(f"[yellow][DRY RUN][/yellow] Would scan '{project}' for conflicts")
+        return
+
+    actions = scan_and_resolve_project(
+        engine, project, strategy=strategy, decay_amount=decay
+    )
+
+    if not actions:
+        console.print(f"[green][OK][/green] No conflicts to resolve in '{project}'")
+        return
+
+    console.print(
+        f"[green][OK][/green] Resolved [bold]{len(actions)}[/bold] conflicts in '{project}'"
+    )
+    for a in actions[:5]:
+        changes = ", ".join(f"{k}={v}" for k, v in a["changes"].items())
+        console.print(f"  Memory #{a['memory_id']}: {changes}")
+    if len(actions) > 5:
+        console.print(f"  ... and {len(actions) - 5} more")
+
+
 @main.command()
 @click.option("--host", default="127.0.0.1", help="Host to bind")
 @click.option("--port", default=8746, help="Port to bind")

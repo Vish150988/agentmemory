@@ -945,6 +945,18 @@ def api_kg_node(node_id: int, project: str = "") -> dict[str, Any]:
         conn.close()
 
 
+@app.post("/api/conflicts/resolve")
+def api_resolve_conflicts(payload: dict[str, Any]) -> dict[str, Any]:
+    from .conflict_resolution import scan_and_resolve_project
+
+    engine = MemoryEngine()
+    project = payload.get("project", "default")
+    strategy = payload.get("strategy", "decay")
+    decay_amount = payload.get("decay_amount", 0.3)
+    actions = scan_and_resolve_project(engine, project, strategy=strategy, decay_amount=decay_amount)
+    return {"resolved": len(actions), "actions": actions}
+
+
 def run_dashboard(host: str = "127.0.0.1", port: int = 8745) -> None:
     """Run the dashboard server."""
     try:
