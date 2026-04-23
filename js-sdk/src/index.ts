@@ -1,0 +1,28 @@
+export { CrossAgentMemoryClient } from "./client.js";
+export type { ClientOptions } from "./client.js";
+export type {
+  Memory,
+  MemoryListResponse,
+  CreateMemoryPayload,
+  UpdateMemoryPayload,
+  SearchResponse,
+  StatsResponse,
+  ProjectsResponse,
+  SummaryResponse,
+  DigestResponse,
+  GraphResponse,
+  GraphNode,
+  GraphEdge,
+  TimelineResponse,
+  TimelineItem,
+  ClustersResponse,
+  ConflictsResponse,
+  Conflict,
+  TagResponse,
+  KGResponse,
+  KGNode,
+  KGEdge,
+  KGPathsResponse,
+  ResolveConflictsPayload,
+  ResolveConflictsResponse,
+} from "./types.js";
