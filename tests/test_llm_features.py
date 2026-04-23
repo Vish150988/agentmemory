@@ -47,12 +47,12 @@ def test_detect_conflicts_empty() -> None:
 def test_detect_conflicts_with_memories(tmp_path: Path) -> None:
     db = tmp_path / "test.db"
     engine = MemoryEngine(db_path=db)
-    engine.store(MemoryEntry(
-        project="p", session_id="s", content="Use PostgreSQL", category="decision"
-    ))
-    engine.store(MemoryEntry(
-        project="p", session_id="s", content="Use MongoDB", category="decision"
-    ))
+    engine.store(
+        MemoryEntry(project="p", session_id="s", content="Use PostgreSQL", category="decision")
+    )
+    engine.store(
+        MemoryEntry(project="p", session_id="s", content="Use MongoDB", category="decision")
+    )
 
     conflicts = detect_conflicts(engine, "p")
     assert isinstance(conflicts, list)

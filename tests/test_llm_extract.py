@@ -2,13 +2,13 @@
 
 from unittest.mock import MagicMock
 
-from crossagentmemory.llm_extract import (
-    extract_memories_from_text,
-    extract_memories_from_conversation,
-    extract_temporal_facts,
-    extract_and_store,
-)
 from crossagentmemory.llm import LLMResponse
+from crossagentmemory.llm_extract import (
+    extract_and_store,
+    extract_memories_from_conversation,
+    extract_memories_from_text,
+    extract_temporal_facts,
+)
 
 
 class MockEngine:
@@ -34,8 +34,18 @@ def _make_client(response_text: str):
 
 def test_extract_memories_from_text_basic():
     response = """[
-        {"content": "Chose PostgreSQL for the database", "category": "decision", "confidence": 0.95, "tags": "database,postgres"},
-        {"content": "Implemented JWT authentication", "category": "action", "confidence": 0.9, "tags": "auth,jwt"}
+        {
+            "content": "Chose PostgreSQL for the database",
+            "category": "decision",
+            "confidence": 0.95,
+            "tags": "database,postgres"
+        },
+        {
+            "content": "Implemented JWT authentication",
+            "category": "action",
+            "confidence": 0.9,
+            "tags": "auth,jwt"
+        }
     ]"""
     client = _make_client(response)
     entries = extract_memories_from_text(
@@ -68,16 +78,19 @@ def test_extract_memories_from_text_malformed_json():
 
 def test_extract_memories_from_conversation():
     response = """[
-        {"content": "User wants dark mode", "category": "preference", "confidence": 0.8, "tags": "ui,dark-mode"}
+        {
+            "content": "User wants dark mode",
+            "category": "preference",
+            "confidence": 0.8,
+            "tags": "ui,dark-mode"
+        }
     ]"""
     client = _make_client(response)
     messages = [
         {"role": "user", "content": "Can we add dark mode?"},
         {"role": "assistant", "content": "Sure, I'll implement a dark mode toggle."},
     ]
-    entries = extract_memories_from_conversation(
-        messages, project="ui-proj", client=client
-    )
+    entries = extract_memories_from_conversation(messages, project="ui-proj", client=client)
     assert len(entries) == 1
     assert "dark mode" in entries[0].content.lower()
 
@@ -136,7 +149,14 @@ def test_extract_and_store():
 
 def test_extract_and_store_temporal():
     response = """[
-        {"content": "Old stack", "category": "fact", "confidence": 0.8, "valid_from": "2023-01-01T00:00:00+00:00", "valid_until": "2023-12-31T00:00:00+00:00", "tags": "test"}
+        {
+            "content": "Old stack",
+            "category": "fact",
+            "confidence": 0.8,
+            "valid_from": "2023-01-01T00:00:00+00:00",
+            "valid_until": "2023-12-31T00:00:00+00:00",
+            "tags": "test"
+        }
     ]"""
     client = _make_client(response)
     engine = MockEngine()

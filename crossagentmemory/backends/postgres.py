@@ -88,18 +88,14 @@ class PostgresBackend(MemoryBackend):
                     )
                     """
                 )
-                cur.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_memories_project ON memories(project)"
-                )
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_memories_project ON memories(project)")
                 cur.execute(
                     "CREATE INDEX IF NOT EXISTS idx_memories_session ON memories(session_id)"
                 )
                 cur.execute(
                     "CREATE INDEX IF NOT EXISTS idx_memories_category ON memories(category)"
                 )
-                cur.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_memories_user_id ON memories(user_id)"
-                )
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_memories_user_id ON memories(user_id)")
                 cur.execute(
                     "CREATE INDEX IF NOT EXISTS idx_memories_tenant_id ON memories(tenant_id)"
                 )
@@ -331,9 +327,7 @@ class PostgresBackend(MemoryBackend):
         conn = self._connection()
         try:
             with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT context FROM projects WHERE name = %s", (project,)
-                )
+                cur.execute("SELECT context FROM projects WHERE name = %s", (project,))
                 row = cur.fetchone()
                 if row:
                     return row[0] if isinstance(row[0], dict) else json.loads(row[0])
@@ -347,9 +341,7 @@ class PostgresBackend(MemoryBackend):
         conn = self._connection()
         try:
             with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT description FROM projects WHERE name = %s", (project,)
-                )
+                cur.execute("SELECT description FROM projects WHERE name = %s", (project,))
                 row = cur.fetchone()
                 return row[0] if row and row[0] else ""
         except Exception:
@@ -426,7 +418,9 @@ class PostgresBackend(MemoryBackend):
             self._conn = None
             raise
 
-    def delete_project(self, project: str, user_id: str | None = None, tenant_id: str | None = None) -> int:
+    def delete_project(
+        self, project: str, user_id: str | None = None, tenant_id: str | None = None
+    ) -> int:
         conn = self._connection()
         try:
             with conn.cursor() as cur:
@@ -449,9 +443,7 @@ class PostgresBackend(MemoryBackend):
             self._conn = None
             raise
 
-    def store_embedding(
-        self, memory_id: int, model_name: str, embedding: list[float]
-    ) -> None:
+    def store_embedding(self, memory_id: int, model_name: str, embedding: list[float]) -> None:
         now = datetime.now(timezone.utc).isoformat()
         conn = self._connection()
         try:
@@ -473,9 +465,7 @@ class PostgresBackend(MemoryBackend):
             self._conn = None
             raise
 
-    def get_embeddings(
-        self, project: str, model_name: str
-    ) -> list[tuple[int, list[float]]]:
+    def get_embeddings(self, project: str, model_name: str) -> list[tuple[int, list[float]]]:
         conn = self._connection()
         try:
             with conn.cursor() as cur:

@@ -110,7 +110,9 @@ def init(project: str | None, backend: str) -> None:
 @click.option("--tenant", default="", help="Tenant/organization ID")
 @click.option("--valid-from", default="", help="ISO timestamp when this memory becomes valid")
 @click.option("--valid-until", default="", help="ISO timestamp when this memory expires")
-@click.option("--llm-extract", is_flag=True, help="Use LLM to extract structured memories from content")
+@click.option(
+    "--llm-extract", is_flag=True, help="Use LLM to extract structured memories from content"
+)
 def capture(
     content: str,
     project: str | None,
@@ -182,13 +184,24 @@ def capture(
 @click.option("--user", "-u", default=None, help="Filter by user ID")
 @click.option("--tenant", default=None, help="Filter by tenant ID")
 @click.option("--at-time", default=None, help="ISO timestamp: only memories valid at this time")
-def recall(project: str | None, category: str | None, limit: int, user: str | None, tenant: str | None, at_time: str | None) -> None:
+def recall(
+    project: str | None,
+    category: str | None,
+    limit: int,
+    user: str | None,
+    tenant: str | None,
+    at_time: str | None,
+) -> None:
     """Recall recent memories."""
     project = project or _get_project()
     engine = MemoryEngine()
     memories = engine.recall(
-        project=project, category=category, limit=limit,
-        user_id=user, tenant_id=tenant, at_time=at_time,
+        project=project,
+        category=category,
+        limit=limit,
+        user_id=user,
+        tenant_id=tenant,
+        at_time=at_time,
     )
 
     if not memories:
@@ -254,7 +267,9 @@ def recall_temporal(
         memories = [m for m in memories if m.tenant_id == tenant]
 
     if not memories:
-        console.print(f"[yellow]No temporally valid memories found for project '{project}'[/yellow]")
+        console.print(
+            f"[yellow]No temporally valid memories found for project '{project}'[/yellow]"
+        )
         return
 
     table = Table(title=f"Temporal Memories — {project}")
@@ -285,13 +300,24 @@ def recall_temporal(
 @click.option("--user", "-u", default=None, help="Filter by user ID")
 @click.option("--tenant", default=None, help="Filter by tenant ID")
 @click.option("--at-time", default=None, help="ISO timestamp: only memories valid at this time")
-def search(keyword: str, project: str | None, limit: int, user: str | None, tenant: str | None, at_time: str | None) -> None:
+def search(
+    keyword: str,
+    project: str | None,
+    limit: int,
+    user: str | None,
+    tenant: str | None,
+    at_time: str | None,
+) -> None:
     """Search memories by keyword."""
     project = project or _get_project()
     engine = MemoryEngine()
     results = engine.search(
-        keyword, project=project, limit=limit,
-        user_id=user, tenant_id=tenant, at_time=at_time,
+        keyword,
+        project=project,
+        limit=limit,
+        user_id=user,
+        tenant_id=tenant,
+        at_time=at_time,
     )
 
     if not results:
@@ -346,7 +372,7 @@ def team_status_cmd(project: str | None, cwd: str) -> None:
     console.print(f"Team folder: {info['team_folder']}")
     console.print(f"Team folder exists: {'yes' if info['team_folder_exists'] else 'no'}")
     console.print(f"Export files: {info['export_files']}")
-    if info['latest_export']:
+    if info["latest_export"]:
         console.print(f"Latest export: {info['latest_export']}")
 
 
@@ -359,7 +385,12 @@ def team_status_cmd(project: str | None, cwd: str) -> None:
     help="Comma-separated sources: shell, git, claude",
 )
 @click.option("--dry-run", is_flag=True, help="Preview without storing")
-@click.option("--use-llm", is_flag=True, default=True, help="Use LLM extraction for rich sources (Claude logs)")
+@click.option(
+    "--use-llm",
+    is_flag=True,
+    default=True,
+    help="Use LLM extraction for rich sources (Claude logs)",
+)
 def capture_auto(project: str | None, sources: str, dry_run: bool, use_llm: bool) -> None:
     """Auto-capture memories from shell history, git log, and Claude sessions."""
     from .auto_capture import (

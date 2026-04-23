@@ -107,7 +107,8 @@ class RedisBackend(MemoryBackend):
             entries = [e for e in entries if e.tenant_id == tenant_id]
         if at_time is not None:
             entries = [
-                e for e in entries
+                e
+                for e in entries
                 if (not e.valid_from or e.valid_from <= at_time)
                 and (not e.valid_until or e.valid_until >= at_time)
             ]
@@ -134,13 +135,15 @@ class RedisBackend(MemoryBackend):
         entries = [e for e in entries if e is not None]
         if at_time is not None:
             entries = [
-                e for e in entries
+                e
+                for e in entries
                 if (not e.valid_from or e.valid_from <= at_time)
                 and (not e.valid_until or e.valid_until >= at_time)
             ]
         if window_start is not None and window_end is not None:
             entries = [
-                e for e in entries
+                e
+                for e in entries
                 if (not e.valid_until or e.valid_until >= window_start)
                 and (not e.valid_from or e.valid_from <= window_end)
             ]
@@ -222,7 +225,9 @@ class RedisBackend(MemoryBackend):
             count += 1
         return {"total_memories": count}
 
-    def delete_project(self, project: str, user_id: str | None = None, tenant_id: str | None = None) -> int:
+    def delete_project(
+        self, project: str, user_id: str | None = None, tenant_id: str | None = None
+    ) -> int:
         r = self._client()
         ids = r.zrange(self._project_zset(project), 0, -1)
         pipe = r.pipeline()
@@ -254,17 +259,13 @@ class RedisBackend(MemoryBackend):
             r.srem(f"{KEY_PREFIX}:projects", project)
         return deleted
 
-    def store_embedding(
-        self, memory_id: int, model_name: str, embedding: list[float]
-    ) -> None:
+    def store_embedding(self, memory_id: int, model_name: str, embedding: list[float]) -> None:
         r = self._client()
         r.set(self._embedding_key(memory_id, model_name), json.dumps(embedding))
         # Track model on memory hash
         r.hset(self._memory_key(memory_id), "embedding_models", model_name)
 
-    def get_embeddings(
-        self, project: str, model_name: str
-    ) -> list[tuple[int, list[float]]]:
+    def get_embeddings(self, project: str, model_name: str) -> list[tuple[int, list[float]]]:
         r = self._client()
         ids = r.zrange(self._project_zset(project), 0, -1)
         out = []

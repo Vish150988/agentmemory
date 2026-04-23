@@ -101,7 +101,9 @@ class MemoryEngine:
             at_time: ISO timestamp. Only returns memories valid at this time
                      (valid_from <= at_time <= valid_untill, or open-ended).
         """
-        return self.backend.recall(project, category, limit, session_id, user_id, tenant_id, at_time)
+        return self.backend.recall(
+            project, category, limit, session_id, user_id, tenant_id, at_time
+        )
 
     def search(
         self,
@@ -132,23 +134,23 @@ class MemoryEngine:
         """Set or update project context."""
         self.backend.set_project_context(project, context, description)
 
-    def stats(self, user_id: Optional[str] = None, tenant_id: Optional[str] = None) -> dict[str, Any]:
+    def stats(
+        self, user_id: Optional[str] = None, tenant_id: Optional[str] = None
+    ) -> dict[str, Any]:
         """Return basic stats about the memory store."""
         return self.backend.stats(user_id, tenant_id)
 
-    def delete_project(self, project: str, user_id: Optional[str] = None, tenant_id: Optional[str] = None) -> int:
+    def delete_project(
+        self, project: str, user_id: Optional[str] = None, tenant_id: Optional[str] = None
+    ) -> int:
         """Delete all memories for a project. Returns number of rows deleted."""
         return self.backend.delete_project(project, user_id, tenant_id)
 
-    def store_embedding(
-        self, memory_id: int, model_name: str, embedding: list[float]
-    ) -> None:
+    def store_embedding(self, memory_id: int, model_name: str, embedding: list[float]) -> None:
         """Store a vector embedding for a memory."""
         self.backend.store_embedding(memory_id, model_name, embedding)
 
-    def get_embeddings(
-        self, project: str, model_name: str
-    ) -> list[tuple[int, list[float]]]:
+    def get_embeddings(self, project: str, model_name: str) -> list[tuple[int, list[float]]]:
         """Retrieve all embeddings for a project matching a model."""
         return self.backend.get_embeddings(project, model_name)
 
@@ -156,7 +158,9 @@ class MemoryEngine:
         """Return all distinct embedding model names for a project."""
         return self.backend.list_embedding_models(project)
 
-    def list_projects(self, user_id: Optional[str] = None, tenant_id: Optional[str] = None) -> list[str]:
+    def list_projects(
+        self, user_id: Optional[str] = None, tenant_id: Optional[str] = None
+    ) -> list[str]:
         """Return a list of all distinct project names."""
         return self.backend.list_projects(user_id, tenant_id)
 

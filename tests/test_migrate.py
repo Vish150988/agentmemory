@@ -51,9 +51,7 @@ class TestMigrate:
         target_db = tmp_path / "target.db"
 
         source = MemoryEngine(db_path=source_db, backend="sqlite")
-        eid = source.store(
-            MemoryEntry(project="proj", content="hello", category="fact")
-        )
+        eid = source.store(MemoryEntry(project="proj", content="hello", category="fact"))
         source.store_embedding(eid, "tfidf", [0.1, 0.2, 0.3])
 
         target = MemoryEngine(db_path=target_db, backend="sqlite")

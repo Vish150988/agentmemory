@@ -174,9 +174,7 @@ def restore_backup(
         old_memory_id = e["memory_id"]
         new_memory_id = id_map.get(old_memory_id)
         if new_memory_id:
-            engine.store_embedding(
-                new_memory_id, e["model_name"], e["embedding"]
-            )
+            engine.store_embedding(new_memory_id, e["model_name"], e["embedding"])
             restored_embeddings += 1
 
     return {

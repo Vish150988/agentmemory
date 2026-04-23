@@ -16,9 +16,7 @@ from .summarize import summarize_project, summarize_session
 try:
     from fastmcp import FastMCP
 except ImportError as e:
-    raise ImportError(
-        "MCP server requires fastmcp. Install with: pip install fastmcp"
-    ) from e
+    raise ImportError("MCP server requires fastmcp. Install with: pip install fastmcp") from e
 
 mcp = FastMCP(
     "crossagentmemory",
@@ -173,9 +171,7 @@ def memory_stats(project: str = "") -> str:
 
 
 @mcp.tool()
-def memory_related(
-    project: str, query: str, top_k: int = 5, backend: str = "auto"
-) -> str:
+def memory_related(project: str, query: str, top_k: int = 5, backend: str = "auto") -> str:
     """Find semantically related memories.
 
     Args:

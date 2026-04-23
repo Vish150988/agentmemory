@@ -442,9 +442,9 @@ def api_export(project: str = "") -> dict[str, Any]:
     engine = MemoryEngine()
     memories = engine.recall(project=project or None, limit=100000)
     return {
-        "exported_at": __import__("datetime").datetime.now(
-            __import__("datetime").timezone.utc
-        ).isoformat(),
+        "exported_at": __import__("datetime")
+        .datetime.now(__import__("datetime").timezone.utc)
+        .isoformat(),
         "project": project or "all",
         "count": len(memories),
         "memories": [
@@ -502,8 +502,6 @@ def run_dashboard(host: str = "127.0.0.1", port: int = 8745) -> None:
     try:
         import uvicorn
     except ImportError as e:
-        raise ImportError(
-            "Dashboard requires uvicorn. Install with: pip install uvicorn"
-        ) from e
+        raise ImportError("Dashboard requires uvicorn. Install with: pip install uvicorn") from e
 
     uvicorn.run(app, host=host, port=port, log_level="warning")

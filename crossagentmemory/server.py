@@ -37,9 +37,7 @@ from .llm_features import (
 try:
     from fastapi import FastAPI, HTTPException, Query
 except ImportError as e:
-    raise ImportError(
-        "REST API requires fastapi. Install with: pip install fastapi uvicorn"
-    ) from e
+    raise ImportError("REST API requires fastapi. Install with: pip install fastapi uvicorn") from e
 
 app = FastAPI(title="CrossAgentMemory API", version="0.4.0")
 
@@ -234,8 +232,6 @@ def run_server(host: str = "127.0.0.1", port: int = 8746) -> None:
     try:
         import uvicorn
     except ImportError as e:
-        raise ImportError(
-            "Server requires uvicorn. Install with: pip install uvicorn"
-        ) from e
+        raise ImportError("Server requires uvicorn. Install with: pip install uvicorn") from e
 
     uvicorn.run(app, host=host, port=port, log_level="warning")

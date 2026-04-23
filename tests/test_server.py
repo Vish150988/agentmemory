@@ -38,11 +38,14 @@ def test_api_create_and_get_memory(client: TestClient) -> None:
 
 
 def test_api_search(client: TestClient) -> None:
-    client.post("/api/memories", json={
-        "project": "search-api",
-        "content": "unique api keyword xyz",
-        "category": "fact",
-    })
+    client.post(
+        "/api/memories",
+        json={
+            "project": "search-api",
+            "content": "unique api keyword xyz",
+            "category": "fact",
+        },
+    )
     resp = client.get("/api/search?q=xyz")
     assert resp.status_code == 200
     data = resp.json()

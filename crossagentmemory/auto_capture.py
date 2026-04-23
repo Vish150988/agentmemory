@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Any
 
 from .core import MemoryEngine, MemoryEntry
-from .llm_extract import extract_memories_from_text
 from .llm import get_llm_client
+from .llm_extract import extract_memories_from_text
 
 CLUADE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
 

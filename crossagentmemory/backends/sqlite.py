@@ -55,15 +55,9 @@ class SQLiteBackend(MemoryBackend):
                 )
                 """
             )
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_memories_project ON memories(project)"
-            )
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_memories_session ON memories(session_id)"
-            )
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_memories_category ON memories(category)"
-            )
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_memories_project ON memories(project)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_memories_session ON memories(session_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_memories_category ON memories(category)")
             # New indexes may fail on pre-v2 databases until migrations run;
             # swallow errors so migration can add the columns first.
             for idx_sql in (
@@ -124,9 +118,7 @@ class SQLiteBackend(MemoryBackend):
                 """
             )
             # Backfill existing data if table is empty
-            count = conn.execute(
-                "SELECT COUNT(*) FROM memories_fts"
-            ).fetchone()[0]
+            count = conn.execute("SELECT COUNT(*) FROM memories_fts").fetchone()[0]
             if count == 0:
                 conn.execute(
                     """
@@ -161,9 +153,13 @@ class SQLiteBackend(MemoryBackend):
         if not at_time:
             return ""
         params.extend([at_time, at_time])
-        return " AND (valid_from = '' OR valid_from <= ?) AND (valid_until = '' OR valid_until >= ?)"
+        return (
+            " AND (valid_from = '' OR valid_from <= ?) AND (valid_until = '' OR valid_until >= ?)"
+        )
 
-    def _user_tenant_clause(self, params: list[Any], user_id: str | None, tenant_id: str | None) -> str:
+    def _user_tenant_clause(
+        self, params: list[Any], user_id: str | None, tenant_id: str | None
+    ) -> str:
         clause = ""
         if user_id is not None:
             clause += " AND user_id = ?"
@@ -353,9 +349,7 @@ class SQLiteBackend(MemoryBackend):
     def get_project_context(self, project: str) -> dict[str, Any]:
         conn = self._connection()
         try:
-            row = conn.execute(
-                "SELECT context FROM projects WHERE name = ?", (project,)
-            ).fetchone()
+            row = conn.execute("SELECT context FROM projects WHERE name = ?", (project,)).fetchone()
             if row:
                 return json.loads(row["context"])
             return {}
@@ -408,7 +402,9 @@ class SQLiteBackend(MemoryBackend):
                 where += " AND tenant_id = ?"
                 params.append(tenant_id)
 
-            total = conn.execute(f"SELECT COUNT(*) as c FROM memories {where}", params).fetchone()["c"]
+            total = conn.execute(f"SELECT COUNT(*) as c FROM memories {where}", params).fetchone()[
+                "c"
+            ]
             projects = conn.execute(
                 f"SELECT COUNT(DISTINCT project) as c FROM memories {where}", params
             ).fetchone()["c"]
@@ -427,7 +423,9 @@ class SQLiteBackend(MemoryBackend):
         finally:
             self._close(conn)
 
-    def delete_project(self, project: str, user_id: str | None = None, tenant_id: str | None = None) -> int:
+    def delete_project(
+        self, project: str, user_id: str | None = None, tenant_id: str | None = None
+    ) -> int:
         conn = self._connection()
         try:
             query = "DELETE FROM memories WHERE project = ?"
@@ -445,9 +443,7 @@ class SQLiteBackend(MemoryBackend):
         finally:
             self._close(conn)
 
-    def store_embedding(
-        self, memory_id: int, model_name: str, embedding: list[float]
-    ) -> None:
+    def store_embedding(self, memory_id: int, model_name: str, embedding: list[float]) -> None:
         now = datetime.now(timezone.utc).isoformat()
         conn = self._connection()
         try:
@@ -466,9 +462,7 @@ class SQLiteBackend(MemoryBackend):
         finally:
             self._close(conn)
 
-    def get_embeddings(
-        self, project: str, model_name: str
-    ) -> list[tuple[int, list[float]]]:
+    def get_embeddings(self, project: str, model_name: str) -> list[tuple[int, list[float]]]:
         conn = self._connection()
         try:
             rows = conn.execute(
@@ -520,9 +514,7 @@ class SQLiteBackend(MemoryBackend):
     def get_memory_by_id(self, memory_id: int) -> MemoryEntry | None:
         conn = self._connection()
         try:
-            row = conn.execute(
-                "SELECT * FROM memories WHERE id = ?", (memory_id,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM memories WHERE id = ?", (memory_id,)).fetchone()
             if row:
                 return MemoryEntry(**dict(row))
             return None
@@ -530,7 +522,16 @@ class SQLiteBackend(MemoryBackend):
             self._close(conn)
 
     def update_memory(self, memory_id: int, updates: dict[str, Any]) -> bool:
-        allowed = {"content", "category", "confidence", "tags", "user_id", "tenant_id", "valid_from", "valid_until"}
+        allowed = {
+            "content",
+            "category",
+            "confidence",
+            "tags",
+            "user_id",
+            "tenant_id",
+            "valid_from",
+            "valid_until",
+        }
         filtered = {k: v for k, v in updates.items() if k in allowed}
         if not filtered:
             return False

@@ -22,19 +22,104 @@ def _tokenize(text: str) -> list[str]:
     text = text.lower()
     tokens = re.findall(r"[a-z0-9_]+", text)
     stop = {
-        "the", "a", "an", "is", "are", "was", "were", "be", "been",
-        "being", "have", "has", "had", "do", "does", "did", "will",
-        "would", "could", "should", "may", "might", "must", "shall",
-        "can", "need", "dare", "ought", "used", "to", "of", "in",
-        "for", "on", "with", "at", "by", "from", "as", "into",
-        "through", "during", "before", "after", "above", "below",
-        "between", "under", "and", "but", "or", "yet", "so", "if",
-        "because", "although", "though", "while", "where", "when",
-        "that", "which", "who", "whom", "whose", "what", "this",
-        "these", "those", "i", "you", "he", "she", "it", "we",
-        "they", "me", "him", "her", "us", "them", "my", "your",
-        "his", "its", "our", "their", "mine", "yours", "hers",
-        "ours", "theirs", "am", "s", "t", "don", "didn", "wasn",
+        "the",
+        "a",
+        "an",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "have",
+        "has",
+        "had",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "could",
+        "should",
+        "may",
+        "might",
+        "must",
+        "shall",
+        "can",
+        "need",
+        "dare",
+        "ought",
+        "used",
+        "to",
+        "of",
+        "in",
+        "for",
+        "on",
+        "with",
+        "at",
+        "by",
+        "from",
+        "as",
+        "into",
+        "through",
+        "during",
+        "before",
+        "after",
+        "above",
+        "below",
+        "between",
+        "under",
+        "and",
+        "but",
+        "or",
+        "yet",
+        "so",
+        "if",
+        "because",
+        "although",
+        "though",
+        "while",
+        "where",
+        "when",
+        "that",
+        "which",
+        "who",
+        "whom",
+        "whose",
+        "what",
+        "this",
+        "these",
+        "those",
+        "i",
+        "you",
+        "he",
+        "she",
+        "it",
+        "we",
+        "they",
+        "me",
+        "him",
+        "her",
+        "us",
+        "them",
+        "my",
+        "your",
+        "his",
+        "its",
+        "our",
+        "their",
+        "mine",
+        "yours",
+        "hers",
+        "ours",
+        "theirs",
+        "am",
+        "s",
+        "t",
+        "don",
+        "didn",
+        "wasn",
     }
     return [t for t in tokens if len(t) > 2 and t not in stop]
 
@@ -57,9 +142,7 @@ class SemanticBackend(ABC):
         ...
 
     @abstractmethod
-    def find_related(
-        self, memory_id: int, top_k: int = 5
-    ) -> list[tuple[MemoryEntry, float]]:
+    def find_related(self, memory_id: int, top_k: int = 5) -> list[tuple[MemoryEntry, float]]:
         """Find memories related to a given memory by ID."""
         ...
 
@@ -76,9 +159,7 @@ class _TFIDFBackend(SemanticBackend):
         super().__init__(engine, project)
         self._rebuild()
 
-    def _build_tfidf(
-        self, documents: list[str]
-    ) -> tuple[np.ndarray, dict[str, int], list[int]]:
+    def _build_tfidf(self, documents: list[str]) -> tuple[np.ndarray, dict[str, int], list[int]]:
         tokenized = [_tokenize(d) for d in documents]
         vocab: dict[str, int] = {}
         for tokens in tokenized:
@@ -112,9 +193,7 @@ class _TFIDFBackend(SemanticBackend):
         doc_lengths = [len(t) for t in tokenized]
         return tfidf, vocab, doc_lengths
 
-    def _query_vector(
-        self, query: str, vocab: dict[str, int], n_docs: int
-    ) -> np.ndarray:
+    def _query_vector(self, query: str, vocab: dict[str, int], n_docs: int) -> np.ndarray:
         tokens = _tokenize(query)
         n_terms = len(vocab)
         if n_terms == 0:
@@ -153,9 +232,7 @@ class _TFIDFBackend(SemanticBackend):
                 results.append((self.memories[idx], float(scores[idx])))
         return results
 
-    def find_related(
-        self, memory_id: int, top_k: int = 5
-    ) -> list[tuple[MemoryEntry, float]]:
+    def find_related(self, memory_id: int, top_k: int = 5) -> list[tuple[MemoryEntry, float]]:
         target_idx = -1
         for i, m in enumerate(self.memories):
             if m.id == memory_id:
@@ -198,9 +275,7 @@ class _STBackend(SemanticBackend):
     def _ensure_embeddings(self) -> None:
         """Compute and cache embeddings for any memories that don't have them."""
         memories = self.engine.recall(project=self.project, limit=10000)
-        cached = {
-            mid for mid, _ in self.engine.get_embeddings(self.project, self.model_name)
-        }
+        cached = {mid for mid, _ in self.engine.get_embeddings(self.project, self.model_name)}
 
         to_encode = []
         to_encode_ids = []
@@ -254,9 +329,7 @@ class _STBackend(SemanticBackend):
                 results.append((id_to_memory[mid], float(scores[idx])))
         return results
 
-    def find_related(
-        self, memory_id: int, top_k: int = 5
-    ) -> list[tuple[MemoryEntry, float]]:
+    def find_related(self, memory_id: int, top_k: int = 5) -> list[tuple[MemoryEntry, float]]:
         ids, vectors = self._get_vectors()
         if len(ids) == 0:
             return []
@@ -324,7 +397,5 @@ class SemanticIndex:
     def search(self, query: str, top_k: int = 10) -> list[tuple[MemoryEntry, float]]:
         return self._backend.search(query, top_k)
 
-    def find_related(
-        self, memory_id: int, top_k: int = 5
-    ) -> list[tuple[MemoryEntry, float]]:
+    def find_related(self, memory_id: int, top_k: int = 5) -> list[tuple[MemoryEntry, float]]:
         return self._backend.find_related(memory_id, top_k)

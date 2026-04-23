@@ -52,11 +52,14 @@ def test_api_capture_and_recall(client: TestClient) -> None:
 
 
 def test_api_search(client: TestClient) -> None:
-    client.post("/api/capture", json={
-        "project": "search-test",
-        "content": "unique search term xyz123",
-        "category": "fact",
-    })
+    client.post(
+        "/api/capture",
+        json={
+            "project": "search-test",
+            "content": "unique search term xyz123",
+            "category": "fact",
+        },
+    )
     resp = client.get("/api/search?project=search-test&keyword=xyz123")
     assert resp.status_code == 200
     data = resp.json()
@@ -64,16 +67,22 @@ def test_api_search(client: TestClient) -> None:
 
 
 def test_api_projects(client: TestClient) -> None:
-    client.post("/api/capture", json={
-        "project": "proj-a",
-        "content": "memory a",
-        "category": "fact",
-    })
-    client.post("/api/capture", json={
-        "project": "proj-b",
-        "content": "memory b",
-        "category": "fact",
-    })
+    client.post(
+        "/api/capture",
+        json={
+            "project": "proj-a",
+            "content": "memory a",
+            "category": "fact",
+        },
+    )
+    client.post(
+        "/api/capture",
+        json={
+            "project": "proj-b",
+            "content": "memory b",
+            "category": "fact",
+        },
+    )
     resp = client.get("/api/projects")
     assert resp.status_code == 200
     data = resp.json()
@@ -82,11 +91,14 @@ def test_api_projects(client: TestClient) -> None:
 
 
 def test_api_delete_memory(client: TestClient) -> None:
-    resp = client.post("/api/capture", json={
-        "project": "delete-test",
-        "content": "to be deleted",
-        "category": "fact",
-    })
+    resp = client.post(
+        "/api/capture",
+        json={
+            "project": "delete-test",
+            "content": "to be deleted",
+            "category": "fact",
+        },
+    )
     memory_id = resp.json()["memory_id"]
 
     resp = client.delete(f"/api/memories/{memory_id}")
@@ -98,11 +110,14 @@ def test_api_delete_memory(client: TestClient) -> None:
 
 
 def test_api_export(client: TestClient) -> None:
-    client.post("/api/capture", json={
-        "project": "export-test",
-        "content": "export me",
-        "category": "decision",
-    })
+    client.post(
+        "/api/capture",
+        json={
+            "project": "export-test",
+            "content": "export me",
+            "category": "decision",
+        },
+    )
     resp = client.get("/api/export?project=export-test")
     assert resp.status_code == 200
     data = resp.json()
@@ -112,18 +127,24 @@ def test_api_export(client: TestClient) -> None:
 
 
 def test_api_update_memory(client: TestClient) -> None:
-    resp = client.post("/api/capture", json={
-        "project": "update-test",
-        "content": "original",
-        "category": "fact",
-    })
+    resp = client.post(
+        "/api/capture",
+        json={
+            "project": "update-test",
+            "content": "original",
+            "category": "fact",
+        },
+    )
     memory_id = resp.json()["memory_id"]
 
-    resp = client.patch(f"/api/memories/{memory_id}", json={
-        "content": "updated",
-        "category": "decision",
-        "confidence": 0.5,
-    })
+    resp = client.patch(
+        f"/api/memories/{memory_id}",
+        json={
+            "content": "updated",
+            "category": "decision",
+            "confidence": 0.5,
+        },
+    )
     assert resp.status_code == 200
     assert resp.json()["status"] == "updated"
 

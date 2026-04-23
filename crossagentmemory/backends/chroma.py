@@ -287,7 +287,9 @@ class ChromaBackend(MemoryBackend):
             count += 1
         return {"total_memories": count}
 
-    def delete_project(self, project: str, user_id: str | None = None, tenant_id: str | None = None) -> int:
+    def delete_project(
+        self, project: str, user_id: str | None = None, tenant_id: str | None = None
+    ) -> int:
         results = self._memories.get(where={"project": project})
         ids_to_delete = []
         for i, doc_id in enumerate(results["ids"]):
@@ -305,9 +307,7 @@ class ChromaBackend(MemoryBackend):
             self._projects.delete(ids=[project])
         return len(ids_to_delete)
 
-    def store_embedding(
-        self, memory_id: int, model_name: str, embedding: list[float]
-    ) -> None:
+    def store_embedding(self, memory_id: int, model_name: str, embedding: list[float]) -> None:
         doc_id = str(memory_id)
         # Fetch existing to preserve document/metadata
         existing = self._memories.get(ids=[doc_id])
@@ -328,9 +328,7 @@ class ChromaBackend(MemoryBackend):
             metadatas=[meta],
         )
 
-    def get_embeddings(
-        self, project: str, model_name: str
-    ) -> list[tuple[int, list[float]]]:
+    def get_embeddings(self, project: str, model_name: str) -> list[tuple[int, list[float]]]:
         results = self._memories.get(
             where={"project": project},
             include=["embeddings", "metadatas"],

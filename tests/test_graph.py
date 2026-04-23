@@ -33,12 +33,10 @@ def test_build_memory_graph_with_memories(tmp_path: Path) -> None:
 def test_get_category_clusters(tmp_path: Path) -> None:
     db = tmp_path / "test.db"
     engine = MemoryEngine(db_path=db)
-    engine.store(MemoryEntry(
-        project="g", session_id="s", content="fact one", category="fact"
-    ))
-    engine.store(MemoryEntry(
-        project="g", session_id="s", content="decision one", category="decision"
-    ))
+    engine.store(MemoryEntry(project="g", session_id="s", content="fact one", category="fact"))
+    engine.store(
+        MemoryEntry(project="g", session_id="s", content="decision one", category="decision")
+    )
 
     clusters = get_category_clusters(engine, "g")
     assert "fact" in clusters

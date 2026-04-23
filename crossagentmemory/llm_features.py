@@ -85,10 +85,7 @@ def summarize_session_llm(
 
     lines = "\n".join(f"[{m.category}] {m.content}" for m in memories)
     prompt = (
-        f"Summarize this coding session.\n\n"
-        f"Session: {session_id}\n"
-        f"Project: {project}\n\n"
-        f"{lines}"
+        f"Summarize this coding session.\n\nSession: {session_id}\nProject: {project}\n\n{lines}"
     )
     return client.summarize_text(prompt, instruction=SYSTEM_SUMMARIZER)
 

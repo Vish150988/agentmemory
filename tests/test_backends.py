@@ -79,9 +79,7 @@ def test_auto_backend_falls_back_to_tfidf():
     with tempfile.TemporaryDirectory() as tmp:
         db_path = Path(tmp) / "test.db"
         engine = MemoryEngine(db_path=db_path)
-        engine.store(
-            MemoryEntry(project="p", session_id="s", content="test memory")
-        )
+        engine.store(MemoryEntry(project="p", session_id="s", content="test memory"))
 
         # "auto" should always work regardless of ST availability
         index = SemanticIndex(engine, "p", backend="auto")
@@ -100,9 +98,7 @@ def test_backend_caches_embeddings():
         db_path = Path(tmp) / "test.db"
         engine = MemoryEngine(db_path=db_path)
 
-        mid = engine.store(
-            MemoryEntry(project="p", session_id="s", content="caching test")
-        )
+        mid = engine.store(MemoryEntry(project="p", session_id="s", content="caching test"))
 
         index = SemanticIndex(engine, "p", backend="sentence-transformers")
         index.search("cache")

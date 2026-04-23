@@ -66,19 +66,17 @@ class MemoryBackend(ABC):
         """Return basic stats about the memory store."""
 
     @abstractmethod
-    def delete_project(self, project: str, user_id: str | None = None, tenant_id: str | None = None) -> int:
+    def delete_project(
+        self, project: str, user_id: str | None = None, tenant_id: str | None = None
+    ) -> int:
         """Delete all memories for a project. Returns row count."""
 
     @abstractmethod
-    def store_embedding(
-        self, memory_id: int, model_name: str, embedding: list[float]
-    ) -> None:
+    def store_embedding(self, memory_id: int, model_name: str, embedding: list[float]) -> None:
         """Store a vector embedding for a memory."""
 
     @abstractmethod
-    def get_embeddings(
-        self, project: str, model_name: str
-    ) -> list[tuple[int, list[float]]]:
+    def get_embeddings(self, project: str, model_name: str) -> list[tuple[int, list[float]]]:
         """Retrieve all embeddings for a project matching a model."""
 
     @abstractmethod

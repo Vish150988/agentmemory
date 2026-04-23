@@ -263,15 +263,9 @@ class TestMultiTenancy:
             db_path = Path(tmp) / "test.db"
             engine = MemoryEngine(db_path=db_path)
 
-            engine.store(
-                MemoryEntry(project="proj", session_id="s1", content="A", tenant_id="t1")
-            )
-            engine.store(
-                MemoryEntry(project="proj", session_id="s1", content="B", tenant_id="t1")
-            )
-            engine.store(
-                MemoryEntry(project="proj", session_id="s1", content="C", tenant_id="t2")
-            )
+            engine.store(MemoryEntry(project="proj", session_id="s1", content="A", tenant_id="t1"))
+            engine.store(MemoryEntry(project="proj", session_id="s1", content="B", tenant_id="t1"))
+            engine.store(MemoryEntry(project="proj", session_id="s1", content="C", tenant_id="t2"))
 
             t1_stats = engine.stats(tenant_id="t1")
             assert t1_stats["total_memories"] == 2
@@ -287,9 +281,7 @@ class TestMultiTenancy:
             engine.store(
                 MemoryEntry(project="proj", session_id="s1", content="Alice", user_id="alice")
             )
-            engine.store(
-                MemoryEntry(project="proj", session_id="s1", content="Bob", user_id="bob")
-            )
+            engine.store(MemoryEntry(project="proj", session_id="s1", content="Bob", user_id="bob"))
 
             deleted = engine.delete_project("proj", user_id="alice")
             assert deleted == 1
@@ -303,12 +295,8 @@ class TestMultiTenancy:
             db_path = Path(tmp) / "test.db"
             engine = MemoryEngine(db_path=db_path)
 
-            engine.store(
-                MemoryEntry(project="p1", session_id="s1", content="A", user_id="alice")
-            )
-            engine.store(
-                MemoryEntry(project="p2", session_id="s1", content="B", user_id="bob")
-            )
+            engine.store(MemoryEntry(project="p1", session_id="s1", content="A", user_id="alice"))
+            engine.store(MemoryEntry(project="p2", session_id="s1", content="B", user_id="bob"))
 
             alice_projects = engine.list_projects(user_id="alice")
             assert alice_projects == ["p1"]
