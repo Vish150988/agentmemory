@@ -72,6 +72,9 @@ INDEX_HTML = """<!DOCTYPE html>
   .badge-action { background:var(--badge-action-bg); color:var(--badge-action-text); }
   .badge-preference { background:var(--badge-preference-bg); color:var(--badge-preference-text); }
   .badge-error { background:var(--badge-error-bg); color:var(--badge-error-text); }
+  .badge-valid { background:#d1e7dd; color:#0f5132; }
+  .badge-expired { background:#f8d7da; color:#842029; }
+  .badge-future { background:#fff3cd; color:#664d03; }
   .confidence { font-size:.8rem; color:var(--muted); }
   .empty { color:var(--muted); padding:2rem; text-align:center; }
   .recent-item { padding:.6rem; border-bottom:1px solid var(--border); font-size:.85rem; }
@@ -80,6 +83,13 @@ INDEX_HTML = """<!DOCTYPE html>
   .delete-btn { background:var(--danger); color:#fff; border:none; border-radius:4px; padding:.2rem .5rem; font-size:.75rem; cursor:pointer; }
   .theme-toggle { background:var(--panel); border:1px solid var(--border); color:var(--text); padding:.4rem .8rem; border-radius:6px; cursor:pointer; font-size:.85rem; }
   .refresh-indicator { font-size:.75rem; color:var(--muted); margin-left:auto; }
+  .view-toggle { background:var(--panel); border:1px solid var(--border); color:var(--text); padding:.4rem .8rem; border-radius:6px; cursor:pointer; font-size:.85rem; }
+  .view-toggle.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  #graph-view { display:none; }
+  #kg-canvas { width:100%; height:600px; border:1px solid var(--border); border-radius:8px; background:var(--panel); }
+  .kg-controls { display:flex; gap:.5rem; margin-bottom:.5rem; flex-wrap:wrap; }
+  .kg-controls input { padding:.4rem .6rem; border-radius:6px; border:1px solid var(--border); background:var(--panel); color:var(--text); font-size:.85rem; }
+  .kg-tooltip { position:absolute; background:var(--panel); border:1px solid var(--border); padding:.5rem; border-radius:6px; font-size:.8rem; pointer-events:none; display:none; z-index:100; }
 </style>
 </head>
 <body>
@@ -87,7 +97,11 @@ INDEX_HTML = """<!DOCTYPE html>
   <h1>crossagentmemory dashboard</h1>
   <span id="project-label" style="color:var(--muted);font-size:.9rem;"></span>
   <span class="refresh-indicator" id="refresh-indicator"></span>
-  <button class="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
+  <div style="display:flex;gap:.5rem;align-items:center;">
+    <button class="view-toggle active" id="btn-memories" onclick="showView('memories')">Memories</button>
+    <button class="view-toggle" id="btn-graph" onclick="showView('graph')">Knowledge Graph</button>
+    <button class="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
+  </div>
 </header>
 <div class="container">
   <div class="main">
@@ -104,6 +118,16 @@ INDEX_HTML = """<!DOCTYPE html>
       <button class="secondary" onclick="captureMemory()">+ Capture</button>
     </div>
     <div id="memories"></div>
+    <div id="graph-view">
+      <div class="kg-controls">
+        <input type="text" id="kg-start" placeholder="Start entity">
+        <input type="text" id="kg-end" placeholder="End entity">
+        <button onclick="findKgPaths()">Find Paths</button>
+        <button class="secondary" onclick="loadKgGraph()">Refresh Graph</button>
+      </div>
+      <canvas id="kg-canvas"></canvas>
+      <div id="kg-tooltip" class="kg-tooltip"></div>
+    </div>
   </div>
   <div class="sidebar">
     <div class="card"><h3>Recent Captures</h3><div id="recent"></div></div>
@@ -228,12 +252,21 @@ function renderMemories(memories) {
       <th onclick="toggleSort('timestamp')">Time<span class="sort-indicator">${sortIcon('timestamp')}</span></th>
       <th></th>
     </tr>`;
+  const now = new Date().toISOString();
   for(const m of sorted){
     const vf = m.valid_from ? m.valid_from.substring(0,10) : '-';
     const vu = m.valid_until ? m.valid_until.substring(0,10) : '-';
+    let validityBadge = '';
+    if(m.valid_until && m.valid_until < now){
+      validityBadge = '<span class="badge badge-expired">Expired</span>';
+    } else if(m.valid_from && m.valid_from > now){
+      validityBadge = '<span class="badge badge-future">Future</span>';
+    } else if(m.valid_from || m.valid_until){
+      validityBadge = '<span class="badge badge-valid">Valid</span>';
+    }
     html+=`<tr>
       <td>#${m.id}</td>
-      <td><span class="badge badge-${m.category}">${m.category}</span></td>
+      <td><span class="badge badge-${m.category}">${m.category}</span> ${validityBadge}</td>
       <td>${escapeHtml(m.content.substring(0,100))}${m.content.length>100?'...':''}<br><span class="confidence">${m.tags ? 'tags: ' + escapeHtml(m.tags) : ''}</span></td>
       <td>${escapeHtml(m.source||'-')}</td>
       <td>${(m.confidence||1).toFixed(2)}</td>
@@ -349,6 +382,167 @@ async function exportJSON(){
   a.download = 'crossagentmemory-export-'+(p||'all')+'.json';
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function showView(view) {
+  document.getElementById('memories').style.display = view==='memories' ? 'block' : 'none';
+  document.querySelector('.filters').style.display = view==='memories' ? 'flex' : 'none';
+  document.getElementById('graph-view').style.display = view==='graph' ? 'block' : 'none';
+  document.getElementById('btn-memories').classList.toggle('active', view==='memories');
+  document.getElementById('btn-graph').classList.toggle('active', view==='graph');
+  if(view==='graph') loadKgGraph();
+}
+
+// ─── Knowledge Graph Canvas Renderer ───
+let kgNodes=[], kgEdges=[], kgNodeMap={}, kgSim=null, kgCtx=null, kgCanvas=null;
+let kgDragNode=null, kgHoverNode=null, kgOffsetX=0, kgOffsetY=0;
+
+async function loadKgGraph() {
+  const project = document.getElementById('project-select').value || 'default';
+  const data = await fetchJSON('/api/kg?project='+encodeURIComponent(project));
+  kgNodes = (data.nodes||[]).map(n => ({...n, x: Math.random()*600+100, y: Math.random()*400+100, vx:0, vy:0}));
+  kgEdges = (data.edges||[]).map(e => ({...e}));
+  kgNodeMap = {};
+  kgNodes.forEach(n => kgNodeMap[n.id] = n);
+  initKgCanvas();
+  kgAnimate();
+}
+
+function initKgCanvas() {
+  kgCanvas = document.getElementById('kg-canvas');
+  const rect = kgCanvas.parentElement.getBoundingClientRect();
+  kgCanvas.width = rect.width;
+  kgCanvas.height = 600;
+  kgCtx = kgCanvas.getContext('2d');
+  kgCanvas.onmousedown = kgMouseDown;
+  kgCanvas.onmousemove = kgMouseMove;
+  kgCanvas.onmouseup = kgMouseUp;
+  kgCanvas.onmouseleave = kgMouseUp;
+}
+
+function kgMouseDown(e) {
+  const rect = kgCanvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  for(const n of kgNodes) {
+    const dx = mx - n.x, dy = my - n.y;
+    if(dx*dx + dy*dy < 400) { kgDragNode = n; kgOffsetX = dx; kgOffsetY = dy; return; }
+  }
+}
+function kgMouseMove(e) {
+  const rect = kgCanvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  if(kgDragNode) { kgDragNode.x = mx - kgOffsetX; kgDragNode.y = my - kgOffsetY; return; }
+  kgHoverNode = null;
+  for(const n of kgNodes) {
+    const dx = mx - n.x, dy = my - n.y;
+    if(dx*dx + dy*dy < 400) kgHoverNode = n;
+  }
+  const tip = document.getElementById('kg-tooltip');
+  if(kgHoverNode) {
+    tip.style.display = 'block'; tip.style.left = (e.clientX+10)+'px'; tip.style.top = (e.clientY+10)+'px';
+    tip.innerHTML = `<b>${escapeHtml(kgHoverNode.name)}</b><br><span style="color:var(--muted)">${kgHoverNode.type}</span>`;
+  } else { tip.style.display = 'none'; }
+}
+function kgMouseUp() { kgDragNode = null; }
+
+function kgAnimate() {
+  if(document.getElementById('graph-view').style.display === 'none') return;
+  kgSimulate();
+  kgDraw();
+  requestAnimationFrame(kgAnimate);
+}
+
+function kgSimulate() {
+  const W = kgCanvas.width, H = kgCanvas.height;
+  // Repulsion
+  for(let i=0;i<kgNodes.length;i++) {
+    for(let j=i+1;j<kgNodes.length;j++) {
+      const a = kgNodes[i], b = kgNodes[j];
+      let dx = a.x - b.x, dy = a.y - b.y;
+      let dist = Math.sqrt(dx*dx+dy*dy) || 1;
+      const f = 2000/(dist*dist);
+      dx /= dist; dy /= dist;
+      a.vx += dx*f; a.vy += dy*f;
+      b.vx -= dx*f; b.vy -= dy*f;
+    }
+  }
+  // Spring attraction
+  for(const e of kgEdges) {
+    const a = kgNodeMap[e.source], b = kgNodeMap[e.target];
+    if(!a || !b) continue;
+    let dx = b.x - a.x, dy = b.y - a.y;
+    let dist = Math.sqrt(dx*dx+dy*dy) || 1;
+    const f = (dist-120)*0.003;
+    dx /= dist; dy /= dist;
+    a.vx += dx*f; a.vy += dy*f;
+    b.vx -= dx*f; b.vy -= dy*f;
+  }
+  // Center gravity
+  for(const n of kgNodes) {
+    n.vx += (W/2 - n.x)*0.0005;
+    n.vy += (H/2 - n.y)*0.0005;
+    n.vx *= 0.9; n.vy *= 0.9;
+    n.x += n.vx; n.y += n.vy;
+    n.x = Math.max(20, Math.min(W-20, n.x));
+    n.y = Math.max(20, Math.min(H-20, n.y));
+  }
+}
+
+function kgDraw() {
+  const ctx = kgCtx, W = kgCanvas.width, H = kgCanvas.height;
+  ctx.clearRect(0,0,W,H);
+  // Draw edges
+  ctx.lineWidth = 1.5;
+  for(const e of kgEdges) {
+    const a = kgNodeMap[e.source], b = kgNodeMap[e.target];
+    if(!a || !b) continue;
+    ctx.strokeStyle = getTheme()==='dark' ? '#555' : '#ccc';
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    const mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
+    ctx.fillStyle = getTheme()==='dark' ? '#888' : '#666';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(e.relation, mx+4, my);
+  }
+  // Draw nodes
+  for(const n of kgNodes) {
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n===kgHoverNode ? 10 : 7, 0, Math.PI*2);
+    ctx.fillStyle = kgNodeColor(n.type);
+    ctx.fill();
+    ctx.strokeStyle = getTheme()==='dark' ? '#fff' : '#333';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = getTheme()==='dark' ? '#e0e0e0' : '#212529';
+    ctx.font = '11px sans-serif';
+    ctx.fillText(n.name, n.x+10, n.y+3);
+  }
+}
+
+function kgNodeColor(type) {
+  const map = {
+    technology:'#4cc9f0', library:'#60a5fa', concept:'#a78bfa',
+    decision:'#facc15', team:'#4ade80', person:'#f472b6', product:'#fb923c'
+  };
+  return map[type] || '#9ca3af';
+}
+
+function getTheme(){ return localStorage.getItem('theme') || 'dark'; }
+
+async function findKgPaths() {
+  const project = document.getElementById('project-select').value || 'default';
+  const start = document.getElementById('kg-start').value;
+  const end = document.getElementById('kg-end').value;
+  if(!start || !end) return alert('Enter start and end entities');
+  const data = await fetchJSON('/api/kg/paths?project='+encodeURIComponent(project)+'&start='+encodeURIComponent(start)+'&end='+encodeURIComponent(end));
+  if(!data.paths || !data.paths.length) return alert('No paths found');
+  // Highlight first path by temporarily boosting edge weights
+  const pathSet = new Set();
+  for(const edge of data.paths[0]) {
+    pathSet.add(edge.source+'-'+edge.target);
+  }
+  // Visual feedback: could flash edges; for now just log
+  console.log('Path found:', data.paths[0]);
+  alert('Path found with ' + data.paths[0].length + ' hops — see console');
 }
 
 if(autoRefresh) clearInterval(autoRefresh);
@@ -579,6 +773,36 @@ def api_clusters(
 
     engine = MemoryEngine()
     return get_category_clusters(engine, project or "default")
+
+
+@app.get("/api/kg")
+def api_kg(
+    project: str = "",
+) -> dict[str, Any]:
+    from .knowledge_graph import get_graph_for_project
+
+    engine = MemoryEngine()
+    return get_graph_for_project(project or "default", db_path=engine.db_path)
+
+
+@app.get("/api/kg/paths")
+def api_kg_paths(
+    project: str = "",
+    start: str = "",
+    end: str = "",
+    max_depth: int = 5,
+) -> dict[str, Any]:
+    from .knowledge_graph import find_paths
+
+    engine = MemoryEngine()
+    paths = find_paths(
+        project or "default",
+        start,
+        end,
+        max_depth=max_depth,
+        db_path=engine.db_path,
+    )
+    return {"paths": paths}
 
 
 def run_dashboard(host: str = "127.0.0.1", port: int = 8745) -> None:

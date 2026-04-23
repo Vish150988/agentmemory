@@ -1008,6 +1008,103 @@ def graph(project: str | None, backend: str, output: str | None) -> None:
                 console.print(f"  #{edge['source']} ↔ #{edge['target']} (weight: {edge['weight']})")
 
 
+@main.group()
+def kg() -> None:
+    """Knowledge graph — entity-relationship extraction and traversal."""
+    pass
+
+
+@kg.command("build")
+@click.option("--project", "-p", help="Project name")
+@click.option("--limit", "-n", default=50, help="Max memories to process")
+@click.option("--dry-run", is_flag=True, help="Preview without storing")
+def kg_build(project: str | None, limit: int, dry_run: bool) -> None:
+    """Extract knowledge graph from memories using LLM."""
+    from .knowledge_graph import extract_and_store_for_memory, get_graph_for_project
+
+    project = project or _get_project()
+    engine = MemoryEngine()
+    memories = engine.recall(project=project, limit=limit)
+
+    if not memories:
+        console.print(f"[yellow]No memories found for '{project}'[/yellow]")
+        return
+
+    total_nodes = 0
+    total_edges = 0
+    for m in memories:
+        if dry_run:
+            console.print(f"[dim]Would extract KG from memory #{m.id}: {m.content[:60]}...[/dim]")
+            continue
+        result = extract_and_store_for_memory(
+            project, m.id or 0, m.content, db_path=engine.db_path
+        )
+        total_nodes += result["nodes"]
+        total_edges += result["edges"]
+
+    if dry_run:
+        console.print(f"[yellow][DRY RUN][/yellow] Would process {len(memories)} memories")
+        return
+
+    graph = get_graph_for_project(project, db_path=engine.db_path)
+    console.print(
+        f"[green][OK][/green] Knowledge graph built for [bold]{project}[/bold]"
+    )
+    console.print(f"  Memories processed: {len(memories)}")
+    console.print(f"  Total nodes: {len(graph['nodes'])}")
+    console.print(f"  Total edges: {len(graph['edges'])}")
+    console.print(f"  New nodes this run: {total_nodes}")
+    console.print(f"  New edges this run: {total_edges}")
+
+
+@kg.command("show")
+@click.option("--project", "-p", help="Project name")
+@click.option("--type", "node_type", default=None, help="Filter by node type")
+def kg_show(project: str | None, node_type: str | None) -> None:
+    """Show knowledge graph nodes and edges."""
+    from .knowledge_graph import get_edges, get_nodes
+
+    project = project or _get_project()
+    engine = MemoryEngine()
+    nodes = get_nodes(project, node_type=node_type, db_path=engine.db_path)
+    edges = get_edges(project, db_path=engine.db_path)
+
+    console.print(f"[bold]Knowledge Graph — {project}[/bold]\n")
+    console.print(f"Nodes ({len(nodes)}):")
+    for n in nodes:
+        console.print(f"  [{n.node_type}] {n.name}")
+    console.print(f"\nEdges ({len(edges)}):")
+    for e in edges:
+        console.print(f"  {e.source_id} --[{e.relation}]--> {e.target_id}")
+
+
+@kg.command("path")
+@click.argument("start")
+@click.argument("end")
+@click.option("--project", "-p", help="Project name")
+@click.option("--max-depth", default=5, help="Max traversal depth")
+def kg_path(start: str, end: str, project: str | None, max_depth: int) -> None:
+    """Find paths between two entities in the knowledge graph."""
+    from .knowledge_graph import find_paths
+
+    project = project or _get_project()
+    engine = MemoryEngine()
+    paths = find_paths(project, start, end, max_depth=max_depth, db_path=engine.db_path)
+
+    if not paths:
+        console.print(
+            f"[yellow]No paths found between '{start}' and '{end}' in '{project}'[/yellow]"
+        )
+        return
+
+    console.print(f"[bold]Paths from {start} → {end}[/bold]\n")
+    for i, path in enumerate(paths, 1):
+        console.print(f"Path {i} ({len(path)} hops):")
+        for edge in path:
+            console.print(f"  --[{edge['relation']}]-->")
+        console.print()
+
+
 @main.command()
 @click.option("--project", "-p", help="Project name")
 @click.option("--output", "-o", type=click.Path(), help="Output file")
